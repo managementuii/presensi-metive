@@ -1,0 +1,1589 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<!-- FIX ZOOM -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Metive 4.0</title>
+
+<!-- PWA CONFIG -->
+<link rel="icon" type="image/png" href="https://lh3.googleusercontent.com/d/1f4L_6PrCSwo6w0GPrdIwSskXl-kV3C9-=s512">
+<link rel="apple-touch-icon" href="https://lh3.googleusercontent.com/d/1f4L_6PrCSwo6w0GPrdIwSskXl-kV3C9-=s512">
+<meta name="theme-color" content="#f2f2f7" id="themeColorMeta">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+
+<style>
+  /* ================= VARIABLE THEMES (APPLE GLASSMORPHISM) ================= */
+  :root {
+    --bg-body: #f2f2f7;
+    --glass-bg: rgba(255, 255, 255, 0.40); 
+    --glass-border: rgba(255, 255, 255, 0.6); 
+    --glass-input: rgba(255, 255, 255, 0.35);
+    --text-main: #3a3a3c;
+    --text-head: #000000;
+    --text-muted: #8e8e93;
+    --nav-active: #0a84ff;
+    --primary: #0a84ff;
+    --danger: #ff3b30;
+    --success: #34c759;
+    --warning: #ff9500;
+    --shadow-glass: 0 16px 40px rgba(0, 0, 0, 0.06); 
+    --shadow-nav: 0 20px 40px rgba(0, 0, 0, 0.1);
+    --skel-btn-bg: rgba(180, 180, 180, 0.35); 
+  }
+
+  [data-theme="dark"] {
+    --bg-body: #000000;
+    --glass-bg: rgba(30, 30, 30, 0.40);
+    --glass-border: rgba(255, 255, 255, 0.12);
+    --glass-input: rgba(50, 50, 50, 0.4);
+    --text-main: #ebebf5;
+    --text-head: #ffffff;
+    --text-muted: #98989d;
+    --nav-active: #5e5ce6; 
+    --primary: #0a84ff;
+    --shadow-glass: 0 16px 40px rgba(0, 0, 0, 0.4);
+    --shadow-nav: 0 20px 40px rgba(0, 0, 0, 0.6);
+    --skel-btn-bg: rgba(100, 100, 100, 0.4); 
+  }
+
+  /* ================= BASE & MESH BACKGROUND ================= */
+  html { font-size: 16px; -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", "Segoe UI", Roboto, sans-serif;
+    margin: 0; color: var(--text-main);
+    line-height: 1.5; padding-bottom: 110px; overscroll-behavior-y: none; /* PENTING UNTUK PULL TO REFRESH */
+    transition: background 0.3s, color 0.3s;
+    background-color: var(--bg-body);
+    background-image: 
+        radial-gradient(at 0% 0%, rgba(10, 132, 255, 0.20) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, rgba(94, 92, 230, 0.20) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(255, 45, 85, 0.15) 0px, transparent 50%);
+    background-attachment: fixed;
+  }
+  * { box-sizing: border-box; }
+  input, textarea, select { font-size: 16px !important; font-family: inherit; }
+
+  /* ================= CORE GLASS CLASS ================= */
+  .glass-panel {
+     background: var(--glass-bg);
+     backdrop-filter: blur(36px) saturate(200%);
+     -webkit-backdrop-filter: blur(36px) saturate(200%);
+     border: 1px solid var(--glass-border);
+     box-shadow: var(--shadow-glass);
+  }
+
+  /* ================= LOADING & SKELETON (NEW APPLE STYLE) ================= */
+  #loader { 
+      display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+      background: rgba(0,0,0, 0.4); z-index: 99999; justify-content: center; 
+      align-items: center; flex-direction: column; 
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      transition: opacity 0.3s ease;
+  }
+  
+  /* Apple-style Progress Ring */
+  .apple-spinner-container {
+      position: relative;
+      width: 50px;
+      height: 50px;
+      margin-bottom: 16px;
+  }
+
+  .apple-spinner {
+      width: 100%;
+      height: 100%;
+      animation: apple-rotate 2s linear infinite;
+  }
+
+  .apple-spinner circle {
+      stroke: #ffffff;
+      stroke-width: 3;
+      stroke-dasharray: 1, 150;
+      stroke-dashoffset: 0;
+      stroke-linecap: round;
+      fill: none;
+      animation: apple-dash 1.5s ease-in-out infinite;
+  }
+
+  /* Checkmark Success Animation (Hidden by default) */
+  .apple-success {
+      display: none;
+      width: 50px;
+      height: 50px;
+      position: absolute;
+      top: 0;
+      left: 0;
+  }
+  
+  .apple-success circle {
+      stroke: var(--success);
+      stroke-width: 3;
+      fill: none;
+      stroke-dasharray: 150;
+      stroke-dashoffset: 150;
+      animation: draw-circle 0.4s ease-out forwards;
+  }
+
+  .apple-success path {
+      stroke: var(--success);
+      stroke-width: 3;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+      stroke-dasharray: 50;
+      stroke-dashoffset: 50;
+      animation: draw-check 0.3s 0.3s ease-out forwards;
+  }
+
+  @keyframes apple-rotate { 100% { transform: rotate(360deg); } }
+  @keyframes apple-dash {
+      0% { stroke-dasharray: 1, 150; stroke-dashoffset: 0; }
+      50% { stroke-dasharray: 90, 150; stroke-dashoffset: -35; }
+      100% { stroke-dasharray: 90, 150; stroke-dashoffset: -124; }
+  }
+  @keyframes draw-circle { 100% { stroke-dashoffset: 0; } }
+  @keyframes draw-check { 100% { stroke-dashoffset: 0; } }
+
+  .loader-text {
+      font-weight: 600; 
+      color: #ffffff; 
+      font-size: 0.9rem;
+      letter-spacing: 0.5px; 
+      text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+      animation: text-pulse 1.5s infinite alternate ease-in-out;
+  }
+
+  @keyframes text-pulse {
+      0% { opacity: 0.6; }
+      100% { opacity: 1; }
+  }
+  
+  #splash-screen {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background-color: var(--bg-body); z-index: 20000;
+    display: flex; justify-content: center; align-items: center; flex-direction: column;
+    transition: opacity 0.4s ease, visibility 0.4s ease;
+  }
+  #splash-screen.fade-out { opacity: 0; visibility: hidden; }
+  .splash-logo-big { height: 60px; width: auto; margin-bottom: 24px; animation: splashPopIn 0.8s cubic-bezier(0.16, 1, 0.3, 1); }
+  .splash-spinner { width: 24px; height: 24px; border: 2px solid var(--glass-border); border-top: 2px solid var(--text-head); border-radius: 50%; animation: spin 1s linear infinite; }
+
+  @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  @keyframes splashPopIn { 0% { transform: scale(0.8) translateY(10px); opacity: 0; } 100% { transform: scale(1) translateY(0); opacity: 1; } }
+
+  .skeleton {
+    position: relative; overflow: hidden;
+    background-color: var(--glass-input); border-color: transparent !important;
+    border-radius: 8px; display: inline-block; color: transparent !important;
+  }
+  .skeleton::after {
+    content: ""; position: absolute; top: 0; left: -100%; width: 50%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5), transparent);
+    animation: shimmerSkeleton 1.5s infinite;
+  }
+  [data-theme="dark"] .skeleton::after {
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  }
+  @keyframes shimmerSkeleton { 100% { left: 200%; } }
+
+  .skel-text { width: 80px; height: 24px; vertical-align: middle; border-radius: 6px; }
+  .skel-avatar { width: 50px; height: 50px; border-radius: 50%; }
+  .skel-bento { width: 40px; height: 28px; border-radius: 8px; margin-top: 4px; }
+  .skel-badge { width: 120px; height: 28px; border-radius: 20px; margin-top: 15px;}
+  .skel-row { width: 100%; height: 80px; border-radius: 20px; margin-bottom: 12px; }
+  .skel-btn { border-radius: 28px !important; box-shadow: none !important; width: 100%; }
+
+  /* ================= DYNAMIC PILL (SYNC INDICATOR) ================= */
+  #syncIndicator {
+    position: fixed;
+    top: 15px; 
+    left: 50%;
+    transform: translateX(-50%) translateY(-30px); 
+    background: rgba(0, 0, 0, 0.85); 
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    color: #ffffff;
+    padding: 8px 18px;
+    border-radius: 30px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 99999;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); 
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  }
+  #syncIndicator.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+    visibility: visible;
+  }
+  .sync-wave { display: flex; align-items: center; gap: 3px; height: 12px; }
+  .sync-wave .bar { width: 3px; height: 4px; background-color: var(--primary); border-radius: 3px; animation: waveBounce 1s infinite ease-in-out; }
+  .sync-wave .bar:nth-child(1) { animation-delay: -0.3s; }
+  .sync-wave .bar:nth-child(2) { animation-delay: -0.15s; }
+  .sync-wave .bar:nth-child(3) { animation-delay: 0s; }
+  @keyframes waveBounce { 0%, 100% { height: 4px; background-color: var(--primary); } 50% { height: 12px; background-color: #ffffff; } }
+
+  /* ================= FIX Z-INDEX SWEETALERT & IMAGE ================= */
+  .swal2-container { z-index: 30000 !important; font-family: -apple-system, BlinkMacSystemFont, sans-serif !important; }
+  .swal2-popup { border-radius: 28px !important; background: var(--bg-body) !important; color: var(--text-head) !important; }
+  /* FIX FOTO GEPENG & UJUNG MELENGKUNG DI POPUP STORY */
+  .swal2-image { object-fit: cover !important; border-radius: 20px !important; } 
+
+  /* ================= LAYOUT ================= */
+  .app { max-width: 480px; margin: 0 auto; padding: 24px 20px; min-height: 100vh; position: relative; }
+  .card { border-radius: 24px; padding: 20px; margin-bottom: 16px; }
+  .muted { color: var(--text-muted); font-size: 0.85rem; display: block;}
+  .profile-img { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 2px solid var(--glass-border); box-shadow: var(--shadow-glass);}
+
+  button {
+    width: 100%; padding: 16px; margin: 8px 0; border-radius: 18px; border: 1px solid var(--glass-border);
+    background: var(--glass-bg); font-size: 1rem; font-weight: 600; cursor: pointer; color: var(--text-main);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  button:active { transform: scale(0.97); opacity: 0.8; }
+  button.primary { background: linear-gradient(135deg, var(--primary) 0%, #0056cc 100%); color: #fff; border: none; box-shadow: 0 8px 20px rgba(10, 132, 255, 0.3); }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  textarea { width: 100%; padding: 16px; border-radius: 18px; border: 1px solid transparent; background: var(--glass-input); color: var(--text-main); transition: border 0.2s; }
+  textarea:focus { outline: none; border-color: var(--primary); background: var(--glass-bg); }
+
+  .badge { display: inline-block; padding: 4px 10px; border-radius: 10px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+  .badge-green { background: rgba(52, 199, 89, 0.15); color: var(--success); }
+  .badge-yellow { background: rgba(255, 149, 0, 0.15); color: var(--warning); }
+  .badge-red { background: rgba(255, 59, 48, 0.15); color: var(--danger); }
+  .badge-piket { background: rgba(10, 132, 255, 0.15); color: var(--primary); }
+  
+  /* MAPS & CAM */
+  #map { height: 200px; width: 100%; border-radius: 18px; margin-bottom: 12px; z-index: 1; border: 1px solid var(--glass-border); }
+  #camContainer, #resultContainer { background: #000; border-radius: 18px; overflow: hidden; margin-bottom: 12px; display: flex; justify-content: center; align-items: center; width: 100%; border: 1px solid var(--glass-border); box-shadow: inset 0 0 20px rgba(0,0,0,0.5);}
+  #videoElement { width: 100%; height: auto; max-height: 80vh; object-fit: contain; transform: scaleX(-1); }
+  #resultImage { width: 100%; height: auto; display: block; object-fit: contain; }
+  #camControls { display: flex; gap: 10px; }
+  #camControls button { flex: 1; margin: 0; }
+  
+  .pose-banner { background: rgba(255, 149, 0, 0.15); border: 1px solid rgba(255, 149, 0, 0.3); color: #b45309; padding: 14px; border-radius: 18px; text-align: center; font-weight: 600; font-size: 1rem; margin-bottom: 15px; display: none; animation: fadeIn 0.3s; backdrop-filter: blur(10px); }
+  [data-theme="dark"] .pose-banner { color: #ffd60a; }
+
+  /* MOOD SELECTOR */
+  .mood-container { display: flex; justify-content: space-between; gap: 8px; margin-top: 12px; }
+  .mood-btn { flex: 1; padding: 14px 4px; background: var(--glass-input); border: 2px solid transparent; border-radius: 20px; font-size: 1.8rem; text-align: center; cursor: pointer; transition: all 0.2s; -webkit-tap-highlight-color: transparent; }
+  .mood-btn:active { transform: scale(0.9); }
+  .mood-btn.selected { background: rgba(10, 132, 255, 0.1); border-color: var(--primary); transform: scale(1.05); }
+  .mood-label { display: block; font-size: 0.65rem; color: var(--text-head); margin-top: 6px; font-weight: 600; line-height: 1.1; letter-spacing: -0.2px; }
+
+  /* HISTORY & LEADERBOARD */
+  .history-card { padding: 16px; border-radius: 20px; margin-bottom: 12px; background: var(--glass-input); }
+  .history-row { display: grid; grid-template-columns: 85px 10px 1fr; gap: 4px; margin-bottom: 6px; align-items: start; font-size: 0.9rem; }
+  .history-label { color: var(--text-muted); }
+  .history-val { color: var(--text-head); font-weight: 500; display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+
+  .lb-item { display: flex; align-items: center; margin-bottom: 10px; padding: 12px; background: var(--glass-input); border-radius: 16px; transition: transform 0.2s; }
+  .lb-item:active { transform: scale(0.98); }
+  .lb-medal { width: 30px; font-weight: 800; font-size: 1.2rem; text-align: center; margin-right: 10px; color: var(--text-main); }
+  .lb-img { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; margin-right: 12px; border: 2px solid var(--glass-border); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+  .lb-info { flex: 1; }
+  .lb-name { font-weight: 700; color: var(--text-head); font-size: 0.95rem; }
+  .lb-score { font-size: 0.8rem; color: var(--primary); font-weight: 700; }
+
+  /* STORIES UI */
+  .stories-container {
+      display: flex; overflow-x: auto; gap: 16px; padding: 10px 0 20px 0;
+      margin-bottom: 10px; scrollbar-width: none; scroll-behavior: smooth;
+  }
+  .stories-container::-webkit-scrollbar { display: none; } 
+  .story-item {
+      display: flex; flex-direction: column; align-items: center; min-width: 68px;
+      cursor: pointer; position: relative; transition: transform 0.2s;
+  }
+  .story-item:active { transform: scale(0.95); }
+  .story-avatar-wrap {
+      width: 64px; height: 64px; border-radius: 50%; padding: 3px; 
+      background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+      margin-bottom: 8px; position: relative; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  }
+  .story-avatar-wrap.checked-out { background: var(--glass-border); }
+  .story-avatar { width: 100%; height: 100%; border-radius: 50%; border: 2px solid var(--bg-body); object-fit: cover; background: var(--glass-input); }
+  .story-mood { position: absolute; bottom: -4px; right: -4px; font-size: 1.1rem; background: var(--bg-body); border-radius: 50%; padding: 2px; box-shadow: 0 2px 6px rgba(0,0,0,0.15); line-height: 1; border: 2px solid var(--bg-body); }
+  .story-name { font-size: 0.75rem; font-weight: 600; color: var(--text-head); text-align: center; max-width: 70px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* ================= NAV ================= */
+  .bottom-nav {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    width: max-content; max-width: calc(100% - 40px); 
+    display: flex; justify-content: center; gap: 10px; 
+    padding: 10px 15px; z-index: 10001; border-radius: 40px; 
+    box-shadow: var(--shadow-nav);
+  }
+  .nav-item { 
+    background: none; border: none; border-radius: 20px; cursor: pointer; 
+    display: flex; flex-direction: column; align-items: center; gap: 5px; 
+    color: var(--text-muted); font-size: 0.65rem; font-weight: 600; 
+    padding: 5px 10px; margin: 0; transition: 0.2s; min-width: 60px; 
+  }
+  .nav-item svg { width: 22px; height: 22px; fill: currentColor; }
+  .nav-item.active { color: var(--nav-active); transform: scale(1.05); }
+
+  .switch { position: relative; display: inline-block; width: 50px; height: 28px; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--glass-input); transition: .3s; border-radius: 34px; border: 1px solid var(--glass-border);}
+  .slider:before { position: absolute; content: ""; height: 22px; width: 22px; left: 2px; bottom: 2px; background-color: white; transition: .3s; border-radius: 50%; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+  input:checked + .slider { background-color: var(--success); border-color: var(--success);}
+  input:checked + .slider:before { transform: translateX(22px); background-color: white; }
+
+  /* HOME */
+  #view-home { display: none; animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1); padding-bottom: 30px;}
+  #view-home.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  
+  .home-topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  .home-greeting-box { display: flex; flex-direction: column; }
+  .home-date { font-size: 0.85rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;}
+  .time-greeting { font-size: 1.6rem; font-weight: 800; color: var(--text-head); letter-spacing: -0.5px; line-height: 1.1;}
+  .home-avatar { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid var(--glass-border); box-shadow: var(--shadow-glass); }
+
+  .hero-section { text-align: center; margin-bottom: 24px; padding: 30px 20px; border-radius: 32px; position: relative;}
+  .week-badge { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); font-size: 0.85rem; font-weight: 800; background: rgba(10, 132, 255, 0.15); color: var(--primary); padding: 6px 16px; border-radius: 12px; letter-spacing: 0.5px; white-space: nowrap;}
+  .home-clock { font-size: 4.5rem; font-weight: 900; color: var(--text-head); letter-spacing: -3px; line-height: 1; font-variant-numeric: tabular-nums; text-shadow: 0 4px 20px rgba(0,0,0,0.05); margin-top: 15px;}
+  .home-clock-sec { font-size: 1.5rem; color: var(--text-muted); font-weight: 600; margin-left: 5px; }
+
+  /* BENTO GRID */
+  .bento-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+  .bento-card { border-radius: 28px; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; transition: transform 0.2s ease; cursor: default; }
+  .bento-icon-wrapper { width: 40px; height: 40px; border-radius: 14px; display: flex; justify-content: center; align-items: center; font-size: 1.3rem; margin-bottom: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);}
+  .bento-title { font-size: 0.85rem; color: var(--text-head); font-weight: 600; margin-bottom: 4px; opacity: 0.8;}
+  .bento-value { font-size: 1.8rem; font-weight: 800; color: var(--text-head); line-height: 1; letter-spacing: -1px;}
+
+  .home-btn-container { padding: 0; margin-bottom: 30px; }
+  .btn-massive { background: linear-gradient(135deg, var(--primary) 0%, #0056cc 100%); color: white; font-size: 1.1rem; padding: 22px; border-radius: 28px; width: 100%; border: none; cursor: pointer; font-weight: 700; display: flex; justify-content: center; align-items: center; gap: 10px; transition: all 0.2s; box-shadow: 0 10px 25px rgba(10, 132, 255, 0.4); }
+  .btn-massive:active { transform: scale(0.96); box-shadow: 0 5px 15px rgba(10, 132, 255, 0.3); }
+
+  /* ================= UPCOMING EVENTS SLIDER (FITUR BARU) ================= */
+  .upcoming-section { margin-bottom: 24px; }
+  .upcoming-header { 
+      font-weight: 800; color: var(--text-head); margin-bottom: 12px; 
+      font-size: 1.1rem; padding: 0 5px; display: flex; 
+      justify-content: space-between; align-items: center; 
+  }
+  .upcoming-container { 
+      display: flex; overflow-x: auto; gap: 12px; padding-bottom: 10px; 
+      scrollbar-width: none; scroll-behavior: smooth; 
+      margin: 0 -20px; padding: 0 20px 15px 20px; 
+  }
+  .upcoming-container::-webkit-scrollbar { display: none; }
+  .upcoming-card { 
+      min-width: 220px; max-width: 260px; background: var(--glass-input); 
+      border-radius: 20px; padding: 16px; border: 1px solid var(--glass-border); 
+      display: flex; flex-direction: column; gap: 8px; scroll-snap-align: start; 
+      flex-shrink: 0; transition: transform 0.2s; box-shadow: var(--shadow-glass); 
+      cursor: pointer;
+  }
+  .upcoming-card:active { transform: scale(0.97); }
+  .upcoming-card.my-event { border: 2px solid var(--primary); background: rgba(10, 132, 255, 0.08); }
+  .upcoming-date { 
+      font-size: 0.75rem; font-weight: 700; color: var(--primary); 
+      background: rgba(10, 132, 255, 0.15); padding: 4px 8px; 
+      border-radius: 8px; align-self: flex-start; 
+  }
+  .upcoming-title { 
+      font-weight: 800; font-size: 1.05rem; color: var(--text-head); 
+      line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; 
+      -webkit-box-orient: vertical; overflow: hidden; 
+  }
+  .upcoming-time { 
+      font-size: 0.8rem; font-weight: 600; color: var(--text-muted); 
+      display: flex; align-items: center; gap: 4px; 
+  }
+  .upcoming-empty { 
+      width: 100%; text-align: center; padding: 20px; background: var(--glass-input); 
+      border-radius: 20px; border: 1px dashed var(--glass-border); 
+      color: var(--text-muted); font-size: 0.9rem; font-weight: 600; 
+  }
+
+  /* CSS GLOBAL MODAL */
+  .modal {
+      position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%;
+      background-color: rgba(0,0,0,0.5); align-items: flex-end; opacity: 0;
+      visibility: hidden; pointer-events: none; transition: opacity 0.4s ease, visibility 0.4s ease;
+      display: flex; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+  }
+  .modal.show { opacity: 1; visibility: visible; pointer-events: auto; }
+  .modal-content {
+      width: 100%; max-width: 480px; margin: 0 auto; height: 92vh;
+      border-radius: 36px 36px 0 0; padding: 10px 20px 140px 20px; overflow-y: auto;
+      box-shadow: 0 -10px 40px rgba(0,0,0,0.2); transform: translate3d(0, 100%, 0);
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); will-change: transform;
+      -webkit-backface-visibility: hidden; backface-visibility: hidden;
+  }
+  .modal.show .modal-content { transform: translate3d(0, 0, 0); }
+  .modal-drag-handle { width: 40px; height: 5px; background: var(--text-muted); opacity: 0.3; border-radius: 5px; margin: 0 auto 15px auto; }
+  .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  .modal-title { font-weight: 800; font-size: 1.4rem; color: var(--text-head); letter-spacing: -0.5px; }
+  .close-btn { background: var(--glass-input); border: none; width: 36px; height: 36px; border-radius: 18px; font-size: 1rem; color: var(--text-main); cursor: pointer; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(10px);}
+  
+  .view-section { display: none; }
+  .view-section.active { display: block; }
+</style>
+</head>
+<body>
+
+<!-- SPLASH SCREEN -->
+<div id="splash-screen">
+  <img src="https://lh3.googleusercontent.com/d/1GQTnNsmdpZ7J9JjX-O9NtVejp2k5uWnO" alt="Logo" class="splash-logo-big" onerror="this.style.display='none'">
+  <div class="splash-spinner"></div>
+</div>
+
+<!-- LOADING SPINNER (APPLE PROGRESS RING STYLE) -->
+<div id="loader">
+    <div class="apple-spinner-container">
+        <!-- The Spinner Ring -->
+        <svg class="apple-spinner" id="spinnerGraphic" viewBox="0 0 50 50">
+            <circle cx="25" cy="25" r="20"></circle>
+        </svg>
+        <!-- The Success Checkmark (Hidden initially) -->
+        <svg class="apple-success" id="successGraphic" viewBox="0 0 50 50">
+            <circle cx="25" cy="25" r="20"></circle>
+            <path d="M16 26l6 6 13-13"></path>
+        </svg>
+    </div>
+    <div class="loader-text" id="loaderText">Memproses...</div>
+</div>
+
+<!-- DYNAMIC PILL (SYNC INDICATOR) -->
+<div id="syncIndicator">
+  <div class="sync-wave">
+    <div class="bar"></div>
+    <div class="bar"></div>
+    <div class="bar"></div>
+  </div>
+  <span>Memperbarui</span>
+</div>
+
+<!-- WRAPPER APLIKASI (Untuk Pull To Refresh) -->
+<div class="app" id="appMain">
+    <!-- SPINNER PULL TO REFRESH GAYA APPLE -->
+    <div style="position:absolute; top:-40px; left:0; width:100%; display:flex; justify-content:center; align-items:center;">
+        <div id="ptr-spin" style="width:24px; height:24px; border:2.5px solid var(--glass-border); border-top:2.5px solid var(--text-muted); border-radius:50%; transition: none;"></div>
+    </div>
+
+    <!-- =============================================== -->
+    <!-- TAB 1: BERANDA -->
+    <!-- =============================================== -->
+    <div id="view-home" class="view-section active">
+       <div class="home-topbar">
+           <div class="home-greeting-box">
+               <div class="home-date" id="homeDateStr">Senin, 1 Jan</div>
+               <div class="time-greeting">Hai, <span id="homeGreetingName" class="skeleton skel-text"></span> 👋</div>
+           </div>
+           <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4MCIgaGVpZ2h0PSI4MCI+PHJlY3Qgd2lkdGg9IjgwIiBoZWlnaHQ9IjgwIiBmaWxsPSJ0cmFuc3BhcmVudCIvPjwvc3ZnPg==" id="homeAvatar" class="home-avatar skeleton skel-avatar">
+       </div>
+       
+       <div class="stories-container" id="storiesContainer">
+            <div class="story-item"><div class="skeleton skel-avatar" style="width:64px; height:64px;"></div><div class="skeleton skel-text" style="width:50px; height:12px; margin-top:6px;"></div></div>
+       </div>
+
+       <div class="hero-section glass-panel">
+           <div class="week-badge" id="weekBadgeInfo">Loading...</div>
+           <div class="home-clock"><span id="homeClockHrMin">00:00</span><span class="home-clock-sec" id="homeClockSec">00</span></div>
+           <div id="homePresenceStatus" style="display: flex; justify-content: center; margin-top: 15px;">
+               <div class="skeleton skel-badge" id="skeletonBadge"></div>
+       </div>
+       </div>
+
+       <!-- FITUR BARU: UPCOMING EVENTS SLIDER (H+7) -->
+       <div class="upcoming-section" id="upcomingSection" style="display:none;">
+           <div class="upcoming-header">
+               <span>📌 Agenda 7 Hari Ke Depan</span>
+               <span style="font-size: 0.75rem; color: var(--primary); font-weight: 700; cursor:pointer;" onclick="switchTab('calendar')">Lihat Semua</span>
+           </div>
+           <div class="upcoming-container" id="upcomingContainer">
+               <!-- SKELETON LOADER -->
+               <div class="skeleton skel-row" style="min-width:220px; height:100px;"></div>
+               <div class="skeleton skel-row" style="min-width:220px; height:100px; opacity:0.5;"></div>
+           </div>
+       </div>
+
+       <div class="home-btn-container">
+          <button id="btnHomeAction" class="btn-massive skeleton skel-btn" disabled style="background: var(--skel-btn-bg); color: transparent; box-shadow: none;">Loading...</button>
+       </div>
+
+       <div class="card glass-panel" style="margin-bottom: 30px;">
+            <div style="font-weight: 800; color: var(--text-head); margin-bottom: 15px; font-size: 1.1rem; display: flex; justify-content: space-between; align-items: center;">
+                <span>🏆 Top Piket Minggu Ini</span>
+                <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">LIVE</span>
+            </div>
+            <div id="leaderboardContainer">
+                <div class="skeleton skel-row" style="height: 60px;"></div>
+                <div class="skeleton skel-row" style="height: 60px; opacity: 0.7;"></div>
+            </div>
+       </div>
+    </div>
+
+    <!-- =============================================== -->
+    <!-- TAB 2: KALENDER (INJECTION) -->
+    <!-- =============================================== -->
+    <div id="view-calendar" class="view-section">
+        <?!= include('calendar'); ?>
+    </div>
+
+    <!-- =============================================== -->
+    <!-- TAB 3: RIWAYAT -->
+    <!-- =============================================== -->
+    <div id="view-history" class="view-section">
+      <div style="font-size: 1.8rem; font-weight: 800; color: var(--text-head); margin-bottom: 20px; letter-spacing: -0.5px; padding: 0 10px;">Riwayat</div>
+      
+      <div class="bento-grid">
+           <div class="bento-card glass-panel">
+               <div class="bento-icon-wrapper" style="background: linear-gradient(135deg, #32d74b, #28cd41); color: white;">🎯</div>
+               <div>
+                   <div class="bento-title">Skor Piket</div>
+                   <div class="bento-value skeleton skel-bento" id="bentoSumPiket"></div>
+               </div>
+           </div>
+           <div class="bento-card glass-panel">
+               <div class="bento-icon-wrapper" style="background: linear-gradient(135deg, #bf5af2, #5e5ce6); color: white;">🚀</div>
+               <div>
+                   <div class="bento-title">Skor Kegiatan</div>
+                   <div class="bento-value skeleton skel-bento" id="bentoSumKegiatan"></div>
+               </div>
+           </div>
+       </div>
+
+      <div class="card glass-panel" style="padding: 10px;">
+        <div id="historyTable">
+           <div class="skeleton skel-row"></div>
+        </div>
+        <p class="muted" id="historyInfo" style="margin:0; text-align:center; display:none;">Memuat data...</p>
+      </div>
+    </div>
+
+    <!-- =============================================== -->
+    <!-- TAB 4: PROFIL -->
+    <!-- =============================================== -->
+    <div id="view-profile" class="view-section">
+      <div style="font-size: 1.8rem; font-weight: 800; color: var(--text-head); margin-bottom: 20px; letter-spacing: -0.5px; padding: 0 10px;">Pengaturan</div>
+      <div class="card glass-panel" id="profileCard">
+        <div class="muted">Memuat profil...</div>
+      </div>
+      <div class="card glass-panel">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div style="font-weight:600; color:var(--text-head);">Tampilan Gelap</div>
+          <label class="switch">
+            <input type="checkbox" id="themeSwitch" onchange="toggleTheme()">
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+      <div class="card glass-panel">
+        <div style="font-weight:600; color:var(--text-head); margin-bottom:6px;">Tentang</div>
+        <div style="font-size:0.85rem; color:var(--text-muted);">Metive 4.0<br>Versi 3.0 (Upgrade UI & Calendar Integration)<br>by creagievity App Development</div>
+      </div>
+    </div>
+
+</div> <!-- END APP WRAPPER -->
+
+<!-- MODAL PRESENSI -->
+<div id="checkinModal" class="modal">
+   <div class="modal-content glass-panel">
+      <div class="modal-drag-handle"></div>
+      <div class="modal-header">
+          <span class="modal-title">Presensi</span>
+          <button class="close-btn" onclick="closeCheckinModal()">✕</button>
+      </div>
+      
+      <!-- LOKASI -->
+      <div class="card" style="background:var(--glass-input); border:1px solid var(--glass-border); box-shadow:none;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <span style="font-weight:700; color:var(--text-head);">Lokasi</span>
+            <span id="gpsStatus" style="font-size:0.75rem; background:var(--glass-bg); padding:4px 10px; border-radius:12px; font-weight:600;">Belum diambil</span>
+        </div>
+        <div id="map"></div>
+        <button onclick="getLoc()" style="font-weight:700;">Deteksi Lokasi</button>
+      </div>
+
+      <!-- KAMERA -->
+      <div class="card" id="card-camera" style="background:var(--glass-input); border:1px solid var(--glass-border); box-shadow:none;">
+        <div style="margin-bottom:12px; font-weight:700; color:var(--text-head);">Selfie Verifikasi</div>
+        <div id="poseBanner" class="pose-banner">Pose: <span id="poseText" style="color:inherit;">-</span></div>
+        <div id="camContainer" style="display:none;"><video id="videoElement" autoplay playsinline></video></div>
+        <div id="resultContainer" style="display:none;"><img id="resultImage" alt="Hasil Selfie"></div>
+        <div id="camControls">
+          <button id="btnOpenCam" onclick="openCamera()" style="font-weight:700;">Buka Kamera</button>
+          <button id="btnSnap" class="primary" onclick="takeSnapshot()" style="display:none;">📷 Ambil Foto</button>
+          <button id="btnRetake" onclick="resetCamera()" style="display:none; color:var(--danger);">Ulangi</button>
+        </div>
+      </div>
+
+      <!-- JOBDESK -->
+      <div class="card" id="jobdeskCard" style="display:none; background:var(--glass-input); border:1px solid var(--glass-border); box-shadow:none;">
+        <div style="font-weight:700; color:var(--text-head); margin-bottom:8px;">Aktivitas Hari Ini</div>
+        <textarea id="jobdesk" rows="3" placeholder="Apa yang kamu kerjakan hari ini?"></textarea>
+      </div>
+
+      <!-- MOOD SELECTOR -->
+      <div class="card" id="moodCard" style="background:var(--glass-input); border:1px solid var(--glass-border); box-shadow:none;">
+        <div style="font-weight:700; color:var(--text-head);">Mood hari ini?</div>
+        <div class="mood-container" id="moodContainer">
+            <div class="mood-btn" onclick="selectMood('Sangat Senang', this)">🤩<span class="mood-label">Great</span></div>
+            <div class="mood-btn" onclick="selectMood('Senang', this)">😊<span class="mood-label">Good</span></div>
+            <div class="mood-btn" onclick="selectMood('Biasa', this)">😐<span class="mood-label">Okay</span></div>
+            <div class="mood-btn" onclick="selectMood('Sedih', this)">😔<span class="mood-label">Bad</span></div>
+            <div class="mood-btn" onclick="selectMood('Stress', this)">🤯<span class="mood-label">Stress</span></div>
+        </div>
+      </div>
+
+      <!-- ACTION BUTTONS -->
+      <div style="padding-top:10px; margin-bottom: 40px;">
+        <div id="checkinBtns">
+          <button class="primary" id="btnInPiket" onclick="checkin('PIKET')" disabled style="border-radius:24px; font-size:1.1rem; padding:20px;">Check-In Piket</button>
+          <button id="btnInKeg" onclick="checkin('KEGIATAN')" disabled style="border-radius:24px; font-size:1.1rem; padding:20px;">Check-In Kegiatan</button>
+        </div>
+        <div id="checkoutBtns" style="display:none;">
+          <button class="primary" id="btnOutPiket" onclick="checkout('PIKET')" disabled style="border-radius:24px; font-size:1.1rem; padding:20px; background:var(--danger); box-shadow:0 8px 20px rgba(255, 59, 48, 0.3);">Check-Out Piket</button>
+          <button class="primary" id="btnOutKeg" onclick="checkout('KEGIATAN')" disabled style="border-radius:24px; font-size:1.1rem; padding:20px; background:var(--danger); box-shadow:0 8px 20px rgba(255, 59, 48, 0.3);">Check-Out Kegiatan</button>
+        </div>
+      </div>
+   </div>
+</div>
+
+<!-- NAVBAR BAWAH -->
+<div class="bottom-nav glass-panel">
+<button class="nav-item active" onclick="switchTab('home')">
+  <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg><span>Beranda</span>
+</button>
+<button class="nav-item" onclick="switchTab('calendar')">
+  <svg viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7v-5z"/></svg><span>Kalender</span>
+</button>
+<button class="nav-item" onclick="switchTab('history')">
+  <svg viewBox="0 0 24 24"><path d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg><span>Riwayat</span>
+</button>
+<button class="nav-item" onclick="switchTab('profile')">
+  <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg><span>Profil</span>
+</button>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+// ================================================
+// VARIABEL GLOBAL PENTING
+// ================================================
+window.globalCalendarEvents = []; 
+window.currentUserEmail = '';
+window.globalActiveUsers = [];
+
+var safeStorage = {
+  get: function(key) { try { return localStorage.getItem(key); } catch(e) { return null; } },
+  set: function(key, val) { try { localStorage.setItem(key, val); } catch(e) { } }
+};
+
+var splashMati = false; 
+function hideSplashScreen() { 
+    if(splashMati) return; 
+    try { 
+        var splash = document.getElementById('splash-screen'); 
+        if (splash) { 
+            splash.classList.add('fade-out'); 
+            setTimeout(function() { splash.style.display = 'none'; }, 400); 
+        } 
+        splashMati = true; 
+    } catch(e) {} 
+}
+
+window.onload = function() { setTimeout(hideSplashScreen, 3000); }; 
+window.onerror = function(msg) { 
+    hideSplashScreen(); 
+    var l = document.getElementById('loader'); 
+    if(l) { 
+        l.style.display = 'flex'; 
+        l.innerHTML = '<div style="color:#fff; text-align:center; padding:20px; background:rgba(0,0,0,0.8); border-radius:10px;">Error System<br><small>'+msg+'</small></div>'; 
+    } 
+    return false; 
+};
+
+function initTheme() { 
+    var saved = safeStorage.get('theme') || 'light'; 
+    document.documentElement.setAttribute('data-theme', saved); 
+    updateMetaColor(saved); 
+    if(saved === 'dark') { 
+        var ts = document.getElementById('themeSwitch'); 
+        if(ts) ts.checked = true; 
+    } 
+}
+function toggleTheme() { 
+    var current = document.documentElement.getAttribute('data-theme'); 
+    var target = current === 'dark' ? 'light' : 'dark'; 
+    document.documentElement.setAttribute('data-theme', target); 
+    safeStorage.set('theme', target); 
+    updateMetaColor(target); 
+}
+function updateMetaColor(theme) { 
+    var meta = document.getElementById('themeColorMeta'); 
+    if(meta) meta.setAttribute('content', theme === 'dark' ? '#000000' : '#f2f2f7'); 
+}
+
+var CENTER_LAT = -7.760861250435269; 
+var CENTER_LNG = 110.41217797657056; 
+var RADIUS_M = 500;
+
+function esc(s) { 
+    if (!s) return ''; 
+    return String(s).replace(/[&<>"']/g, function(m) { 
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]; 
+    }); 
+}
+function escapeJS(s) { 
+    if (!s) return ''; 
+    return String(s).replace(/\\/g, '\\\\').replace(/'/g, '\\\'').replace(/"/g, '&quot;'); 
+}
+function safeErr(e){ return (e && e.message) ? e.message : String(e); }
+function fmtDate(d) { 
+    if(!d) return '-'; 
+    try { 
+        var p = String(d).split('-'); 
+        if(p.length !== 3) return esc(d); 
+        var dt = new Date(Number(p[0]), Number(p[1])-1, Number(p[2])); 
+        return dt.toLocaleDateString('id-ID', {day:'2-digit', month:'short'}) + ', ' + dt.toLocaleDateString('id-ID', {weekday:'short'}); 
+    } catch(e) { return esc(d); } 
+}
+
+function updateClock() { 
+    var n = new Date(); 
+    var days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu']; 
+    var months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des']; 
+    var dateStr = days[n.getDay()] + ', ' + n.getDate() + ' ' + months[n.getMonth()]; 
+    var hr = String(n.getHours()).padStart(2, '0'); 
+    var min = String(n.getMinutes()).padStart(2, '0'); 
+    var sec = String(n.getSeconds()).padStart(2, '0'); 
+    
+    var elDate = document.getElementById('homeDateStr'); 
+    if(elDate) elDate.textContent = dateStr; 
+    var elHr = document.getElementById('homeClockHrMin'); 
+    if(elHr) elHr.textContent = hr + ':' + min; 
+    var elSec = document.getElementById('homeClockSec'); 
+    if(elSec) elSec.textContent = ':' + sec; 
+    
+    var greetingEl = document.getElementById('homeGreetingName'); 
+    if(greetingEl && !greetingEl.classList.contains('skeleton')) { 
+        document.querySelector('.time-greeting').innerHTML = 'Hai, <span id="homeGreetingName">' + greetingEl.textContent + '</span> 👋'; 
+    } 
+} 
+setInterval(updateClock, 1000);
+
+
+// ========================================================
+// FUNGSI BACKGROUND SYNC (DYNAMIC PILL + SMART CHECK)
+// ========================================================
+var lastSyncTime = Date.now(); 
+var isSyncing = false; 
+
+function performBackgroundSync() {
+    if(isSyncing) return; 
+    var now = Date.now();
+    if(now - lastSyncTime < 30000) return; 
+    
+    isSyncing = true;
+    var ind = document.getElementById('syncIndicator');
+    if(ind) ind.classList.add('show'); 
+    
+    google.script.run.withSuccessHandler(function(d) { 
+        isSyncing = false; lastSyncTime = Date.now(); 
+        if(ind) ind.classList.remove('show'); 
+        if(d && d.ok) {
+            var cachedStr = safeStorage.get('user_data_cache_v12');
+            if (cachedStr !== JSON.stringify(d)) onDataSuccess(d); 
+        }
+    }).withFailureHandler(function(e) { 
+        isSyncing = false; if(ind) ind.classList.remove('show');
+    }).getInitialData();
+}
+
+function switchTab(tabName) { 
+    document.querySelectorAll('.view-section').forEach(function(el) { el.classList.remove('active'); }); 
+    document.querySelectorAll('.nav-item').forEach(function(el) { el.classList.remove('active'); }); 
+    var target = document.getElementById('view-' + tabName); 
+    if(target) target.classList.add('active'); 
+    
+    var idx = 0; 
+    if(tabName === 'home') idx = 0; 
+    else if(tabName === 'calendar') idx = 1; 
+    else if(tabName === 'history') idx = 2; 
+    else if(tabName === 'profile') idx = 3; 
+    
+    var navs = document.querySelectorAll('.nav-item'); 
+    if(navs[idx]) navs[idx].classList.add('active'); 
+    
+    if(typeof closeCheckinModal === 'function') closeCheckinModal(); 
+    if(typeof closeEventModal === 'function') closeEventModal();
+
+    window.scrollTo(0,0); 
+    if(tabName === 'calendar' && typeof renderCalendarGrid === 'function') renderCalendarGrid(); 
+
+    if(typeof google !== 'undefined') performBackgroundSync();
+}
+
+function initModalDrag() {
+    var modals = document.querySelectorAll('.modal-content');
+    for (var i = 0; i < modals.length; i++) {
+        (function(modalContent) {
+            var dragStartY = 0; var dragCurrentY = 0; var isDraggingModal = false;
+            
+            modalContent.addEventListener('touchstart', function(e) { 
+                if (modalContent.scrollTop > 0) return; 
+                dragStartY = e.touches[0].clientY; 
+                isDraggingModal = true; 
+                modalContent.style.transition = 'none'; 
+            }, { passive: true });
+            
+            modalContent.addEventListener('touchmove', function(e) { 
+                if (!isDraggingModal) return; 
+                var deltaY = e.touches[0].clientY - dragStartY; 
+                if (deltaY > 0) { 
+                    dragCurrentY = deltaY; 
+                    modalContent.style.transform = 'translate3d(0, ' + deltaY + 'px, 0)'; 
+                    if (e.cancelable) e.preventDefault(); 
+                } 
+            }, { passive: false });
+            
+            modalContent.addEventListener('touchend', function() { 
+                if (!isDraggingModal) return; 
+                isDraggingModal = false; 
+                modalContent.style.transition = 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)'; 
+                if (dragCurrentY > 150) { 
+                    var parent = modalContent.closest('.modal'); 
+                    if(parent.id === 'checkinModal' && typeof closeCheckinModal === 'function') closeCheckinModal(); 
+                    else if(parent.id === 'eventModal' && typeof closeEventModal === 'function') closeEventModal(); 
+                } else { 
+                    modalContent.style.transform = ''; 
+                } 
+                dragCurrentY = 0; 
+            });
+        })(modals[i]);
+    }
+}
+
+function openCheckinModal() { 
+    var m = document.getElementById('checkinModal'); 
+    var content = m.querySelector('.modal-content'); 
+    if (content) { content.style.transform = ''; content.scrollTop = 0; } 
+    m.classList.add('show'); 
+    setTimeout(function() { 
+        if(typeof map !== 'undefined' && map && typeof L !== 'undefined') map.invalidateSize(); 
+    }, 300); 
+} 
+function closeCheckinModal() { 
+    var m = document.getElementById('checkinModal'); 
+    m.classList.remove('show'); 
+    setTimeout(function() { 
+        var content = m.querySelector('.modal-content'); 
+        if(content) content.style.transform = ''; 
+    }, 400); 
+    resetCamera(); resetMood(); 
+} 
+
+window.onclick = function(event) { 
+    if (event.target === document.getElementById('checkinModal')) { 
+        if(typeof closeCheckinModal === 'function') closeCheckinModal(); 
+    }
+    if (event.target === document.getElementById('eventModal')) { 
+        if(typeof closeEventModal === 'function') closeEventModal(); 
+    }
+}
+
+var map, userMarker, accCircle; 
+function calcDistance(lat1, lon1, lat2, lon2) { 
+    var R = 6371000; var dLat = (lat2 - lat1) * Math.PI / 180; var dLon = (lon2 - lon1) * Math.PI / 180; 
+    var a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2); 
+    var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)); 
+    return Math.round(R * c); 
+} 
+function initMap() { 
+    if(map) return; 
+    try { 
+        if(typeof L === 'undefined') { document.getElementById('map').style.display = 'none'; return; } 
+        map = L.map('map', {zoomControl: false}).setView([CENTER_LAT, CENTER_LNG], 15); 
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {attribution: ''}).addTo(map); 
+        L.circle([CENTER_LAT, CENTER_LNG], {color: '#0a84ff', fillColor: '#0a84ff', fillOpacity: 0.1, stroke: false, radius: RADIUS_M}).addTo(map); 
+        L.marker([CENTER_LAT, CENTER_LNG]).addTo(map); 
+    } catch(e) {} 
+} 
+function updateMap(lat, lng, acc) { 
+    if(typeof L === 'undefined') return; 
+    if(!map) initMap(); 
+    if(map) { 
+        map.setView([lat, lng], 17); 
+        if(userMarker) map.removeLayer(userMarker); 
+        if(accCircle) map.removeLayer(accCircle); 
+        userMarker = L.marker([lat, lng]).addTo(map); 
+        accCircle = L.circle([lat, lng], {color: '#34c759', fillColor: '#34c759', fillOpacity: 0.2, stroke: false, radius: acc}).addTo(map); 
+    } 
+} 
+function getLoc() { 
+    if(!navigator.geolocation) { Swal.fire('Error', 'GPS tidak didukung', 'error'); return; } 
+    document.getElementById('gpsStatus').textContent = 'Mencari...'; 
+    navigator.geolocation.getCurrentPosition(function(p) { 
+        var lat = p.coords.latitude; var lng = p.coords.longitude; var acc = Math.round(p.coords.accuracy); 
+        updateMap(lat, lng, acc); 
+        if(acc > 80) { 
+            Swal.fire('Akurasi Rendah', 'Akurasi ' + acc + 'm buruk.', 'warning'); 
+            document.getElementById('gpsStatus').textContent = 'Akurasi Buruk'; 
+            posData = {lat:lat, lng:lng, akurasi: acc}; gpsReady = false; applyBtns(); return; 
+        } 
+        var d = calcDistance(lat, lng, CENTER_LAT, CENTER_LNG); 
+        if(d > RADIUS_M) { 
+            Swal.fire({title: 'Luar Radius!', text: 'Jarak ' + d + 'm. Lanjut?', icon: 'warning', showCancelButton: true, confirmButtonText: 'Ya', cancelButtonText: 'Batal'}).then(function(r) { 
+                if(r.isConfirmed) { 
+                    document.getElementById('gpsStatus').textContent = 'Luar Radius (' + d + 'm)'; 
+                    document.getElementById('gpsStatus').style.color = 'var(--warning)'; 
+                    posData = {lat:lat, lng:lng, akurasi: acc}; gpsReady = true; applyBtns(); 
+                } else { 
+                    document.getElementById('gpsStatus').textContent = 'Dibatalkan'; gpsReady = false; applyBtns(); 
+                } 
+            }); 
+        } else { 
+            document.getElementById('gpsStatus').textContent = acc + 'm (OK)'; 
+            document.getElementById('gpsStatus').style.color = 'var(--success)'; 
+            posData = {lat:lat, lng:lng, akurasi: acc}; gpsReady = true; applyBtns(); 
+        } 
+    }, function(e) { 
+        gpsReady = false; Swal.fire('Gagal GPS', e.message, 'error'); applyBtns(); 
+    }, {enableHighAccuracy: true, timeout: 15000, maximumAge: 0}); 
+}
+
+var selfieUrl = ''; var videoStream = null; var currentPose = ''; 
+var POSE_LIST = ['Senyum Pamer Gigi 😁', 'Tangan di Dagu 🤔', 'Gaya Jempol 👍', 'Gaya Peace (V) ✌️', 'Pose Izin 🙏', 'Hormat Grak 🫡', 'Saranghae 🫰']; 
+async function openCamera() { 
+    document.getElementById('camContainer').style.display = 'flex'; document.getElementById('resultContainer').style.display = 'none'; 
+    document.getElementById('btnOpenCam').style.display = 'none'; document.getElementById('btnSnap').style.display = 'inline-block'; 
+    document.getElementById('btnRetake').style.display = 'none'; 
+    currentPose = POSE_LIST[Math.floor(Math.random() * POSE_LIST.length)]; 
+    document.getElementById('poseText').textContent = currentPose; document.getElementById('poseBanner').style.display = 'block'; 
+    setTimeout(function() { var cardCam = document.getElementById('card-camera'); cardCam.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 300); 
+    try { 
+        if(videoStream) videoStream.getTracks().forEach(function(t){ t.stop(); }); 
+        var s = await navigator.mediaDevices.getUserMedia({video: {facingMode: 'user'}}); 
+        videoStream = s; document.getElementById('videoElement').srcObject = s; 
+    } catch(e) { 
+        Swal.fire('Kamera Error', e.message, 'error'); resetCamera(); 
+    } 
+} 
+function takeSnapshot() { 
+    var v = document.getElementById('videoElement'); if(!v.srcObject) return; 
+    var c = document.createElement('canvas'); var w = 320; var sc = w / v.videoWidth; var h = v.videoHeight * sc; 
+    c.width = w; c.height = h; var ctx = c.getContext('2d'); ctx.translate(w, 0); ctx.scale(-1, 1); ctx.drawImage(v, 0, 0, w, h); 
+    selfieUrl = c.toDataURL('image/jpeg', 0.5); 
+    document.getElementById('resultImage').src = selfieUrl; 
+    document.getElementById('camContainer').style.display = 'none'; document.getElementById('resultContainer').style.display = 'flex'; 
+    document.getElementById('btnSnap').style.display = 'none'; document.getElementById('btnRetake').style.display = 'inline-block'; 
+    if(videoStream) { videoStream.getTracks().forEach(function(t){ t.stop(); }); videoStream = null; } 
+    v.srcObject = null; 
+} 
+function resetCamera() { 
+    selfieUrl = ''; currentPose = ''; document.getElementById('poseBanner').style.display = 'none'; 
+    document.getElementById('camContainer').style.display = 'none'; document.getElementById('resultContainer').style.display = 'none'; 
+    document.getElementById('btnOpenCam').style.display = 'inline-block'; document.getElementById('btnSnap').style.display = 'none'; 
+    document.getElementById('btnRetake').style.display = 'none'; 
+    if(videoStream) { videoStream.getTracks().forEach(function(t){ t.stop(); }); videoStream = null; } 
+    var v = document.getElementById('videoElement'); if(v) v.srcObject = null; 
+}
+
+var currentMood = ''; 
+function selectMood(moodVal, el) { 
+    currentMood = moodVal; 
+    document.querySelectorAll('.mood-btn').forEach(function(btn){ btn.classList.remove('selected'); }); 
+    el.classList.add('selected'); 
+} 
+function resetMood() { 
+    currentMood = ''; 
+    document.querySelectorAll('.mood-btn').forEach(function(btn){ btn.classList.remove('selected'); }); 
+}
+
+var posData = null; var gpsReady = false; var checkedIn = false; var activeJenis = null; var currentWeekServer = 1; var userWeek = 0; 
+
+// ========================================================
+// APPLE STYLE LOADER FUNCTIONS
+// ========================================================
+function showLoad(show, text = 'Memproses...') { 
+    var loader = document.getElementById('loader');
+    var spinner = document.getElementById('spinnerGraphic');
+    var success = document.getElementById('successGraphic');
+    var textEl = document.getElementById('loaderText');
+
+    if (show) {
+        spinner.style.display = 'block';
+        success.style.display = 'none';
+        textEl.textContent = text;
+        loader.style.display = 'flex';
+        // Small delay to allow display:flex to apply before animating opacity
+        setTimeout(() => { loader.style.opacity = '1'; }, 10);
+    } else {
+        loader.style.opacity = '0';
+        setTimeout(() => { loader.style.display = 'none'; }, 300); // Wait for transition
+    }
+} 
+
+function showSuccessCheckmark(message) {
+    var spinner = document.getElementById('spinnerGraphic');
+    var success = document.getElementById('successGraphic');
+    var textEl = document.getElementById('loaderText');
+
+    spinner.style.display = 'none';
+    success.style.display = 'block';
+    if(message) textEl.textContent = message;
+
+    // Restart the animation by forcing a reflow
+    success.classList.remove('apple-success');
+    void success.offsetWidth; 
+    success.classList.add('apple-success');
+
+    // Return a promise that resolves after the animation finishes
+    return new Promise(resolve => setTimeout(resolve, 1200));
+}
+// ========================================================
+
+function getMasukBadge(h) { 
+    var s = String(h||'').trim(); if(!s || s === '-') return {c:'', t:''}; 
+    var p = s.split(':'); var m = Number(p[0])*60 + Number(p[1]); 
+    if(m < 540) return {c: 'badge-green', t: 'AWAL'}; 
+    if(m <= 545) return {c: 'badge-green', t: 'TEPAT'}; 
+    return {c: 'badge-red', t: 'TELAT'}; 
+} 
+function getPulangBadge(h) { 
+    var s = String(h||'').trim(); if(!s || s === '-') return {c:'', t:''}; 
+    var p = s.split(':'); var m = Number(p[0])*60 + Number(p[1]); 
+    if(m < 1020) return {c: 'badge-red', t: 'AWAL'}; 
+    if(m <= 1035) return {c: 'badge-green', t: 'TEPAT'}; 
+    return {c: 'badge-green', t: 'AKHIR'}; 
+}
+
+function setMode(m, j) { 
+    var jd = document.getElementById('jobdeskCard'); var ci = document.getElementById('checkinBtns'); 
+    var co = document.getElementById('checkoutBtns'); var bOP = document.getElementById('btnOutPiket'); 
+    var bOK = document.getElementById('btnOutKeg'); 
+    checkedIn = false; activeJenis = null; resetMood(); 
+    
+    var btnHome = document.getElementById('btnHomeAction'); 
+    if(btnHome) { 
+        btnHome.className = 'btn-massive glass-panel'; btnHome.disabled = false; btnHome.style.boxShadow = ''; 
+        if(m === 'PRE_CHECKIN') { 
+            btnHome.style.background = 'linear-gradient(135deg, var(--primary) 0%, #0056cc 100%)'; 
+            btnHome.style.color = '#fff'; btnHome.innerHTML = 'Mulai Presensi'; btnHome.onclick = openCheckinModal; 
+        } else if (m === 'POST_CHECKIN') { 
+            btnHome.style.background = 'var(--glass-bg)'; btnHome.style.color = 'var(--text-head)'; 
+            btnHome.innerHTML = 'Check-Out Sekarang'; btnHome.onclick = openCheckinModal; 
+        } 
+    } 
+    
+    if(m === 'PRE_CHECKIN') { 
+        if(jd) jd.style.display = 'none'; 
+        if(ci) ci.style.display = 'block'; 
+        if(co) co.style.display = 'none'; 
+    } 
+    if(m === 'POST_CHECKIN') { 
+        checkedIn = true; activeJenis = (j || null); 
+        if(jd) jd.style.display = 'block'; 
+        if(ci) ci.style.display = 'none'; 
+        if(co) co.style.display = 'block'; 
+        var cJ = String(activeJenis).toUpperCase().trim(); 
+        if(cJ === 'PIKET') { bOP.style.display = 'block'; bOK.style.display = 'none'; } 
+        else { bOP.style.display = 'none'; bOK.style.display = 'block'; } 
+    } 
+    applyBtns(); 
+}
+
+function applyBtns() { 
+    var ip = document.getElementById('btnInPiket'); var ik = document.getElementById('btnInKeg'); 
+    var op = document.getElementById('btnOutPiket'); var ok = document.getElementById('btnOutKeg'); 
+    if(ip && ik) { 
+        if(userWeek === 0) { 
+            ip.disabled = true; ip.innerHTML = "🚫 Non-Aktif Piket"; ip.style.display = ''; 
+            ik.style.display = ''; ik.disabled = !(gpsReady && !checkedIn); 
+        } else if (userWeek !== currentWeekServer) { 
+            ip.disabled = true; ip.innerHTML = "🚫 Bukan Periode Piket"; ip.style.display = ''; 
+            ik.style.display = ''; ik.disabled = !(gpsReady && !checkedIn); 
+        } else { 
+            ip.disabled = !(gpsReady && !checkedIn); ip.innerHTML = "Check-In Piket"; 
+            ip.style.display = ''; ik.style.display = 'none'; 
+        } 
+    } 
+    if(op) op.disabled = !(gpsReady && checkedIn && activeJenis === 'PIKET'); 
+    if(ok) ok.disabled = !(gpsReady && checkedIn && activeJenis === 'KEGIATAN'); 
+}
+
+function renderHeader(st) { 
+    var el = document.getElementById('homePresenceStatus'); 
+    var skeletonBadge = document.getElementById('skeletonBadge'); 
+    if(skeletonBadge) skeletonBadge.remove(); 
+    
+    if(!el) return; 
+    if(!st || st.mode !== 'POST_CHECKIN') { el.innerHTML = ''; return; } 
+    
+    var j = String(st.jenis || '').toUpperCase().trim(); 
+    var jam = (st.timestamp || '').slice(11, 16); 
+    var cls = 'badge-green'; var t = 'AKTIF'; 
+    if(j === 'PIKET') { 
+        var s = getMasukBadge((st.timestamp || '').slice(11, 19)); 
+        if(s.c) { cls = s.c; t = s.t; } 
+    } 
+    el.innerHTML = '<div style="display:inline-flex; align-items:center; gap:6px; background:var(--glass-input); padding:6px 12px; border-radius:20px; font-size:0.85rem; font-weight:600;"><span style="width:8px; height:8px; border-radius:50%; background:var(--success); box-shadow: 0 0 6px var(--success);"></span> Sedang ' + j + ' <span class="badge ' + cls + '" style="margin-left:4px;">' + t + '</span></div>'; 
+}
+
+window.tampilkanPopupStory = function(namaStr, statusStr, emojiStr, urlGbr) { 
+    Swal.fire({ title: namaStr, text: statusStr + ' (Mood: ' + emojiStr + ')', imageUrl: urlGbr, imageWidth: 200, imageHeight: 200, imageAlt: 'Foto Selfie', confirmButtonText: 'Tutup', confirmButtonColor: 'var(--primary)', customClass: {popup: 'glass-panel'} }); 
+};
+
+function renderStoriesData(stories) { 
+    var container = document.getElementById('storiesContainer'); 
+    if(!container) return; 
+    if(!stories || stories.length === 0) { 
+        container.innerHTML = '<div style="font-size:0.85rem; color:var(--text-muted); width:100%; text-align:center; padding:15px 0;">Belum ada yang aktif hari ini.</div>'; return; 
+    } 
+    var html = ''; 
+    var fbImage = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4MCIgaGVpZ2h0PSI4MCI+PHJlY3Qgd2lkdGg9IjgwIiBoZWlnaHQ9IjgwIiBmaWxsPSJ0cmFuc3BhcmVudCIvPjwvc3ZnPg=="; 
+    stories.forEach(function(s) { 
+        var borderClass = s.isCheckedOut ? 'checked-out' : ''; 
+        var imgUrl = s.foto && s.foto.length > 20 ? s.foto : fbImage; 
+        var statusText = s.isCheckedOut ? 'Sudah Pulang' : 'Sedang Aktif'; 
+        html += '<div class="story-item" onclick="tampilkanPopupStory(\'' + escapeJS(s.nama) + '\', \'' + escapeJS(statusText) + '\', \'' + escapeJS(s.moodEmoji) + '\', \'' + escapeJS(imgUrl) + '\')"><div class="story-avatar-wrap ' + borderClass + '"><img src="' + imgUrl + '" class="story-avatar" onerror="this.src=\'' + fbImage + '\'"><div class="story-mood">' + s.moodEmoji + '</div></div><div class="story-name">' + esc(s.nama) + '</div></div>'; 
+    }); 
+    container.innerHTML = html; 
+}
+
+function renderLeaderboard(lb) { 
+    var container = document.getElementById('leaderboardContainer'); 
+    if(!container) return; 
+    if(!lb || lb.length === 0) { 
+        container.innerHTML = '<div class="muted" style="text-align:center; padding: 20px 0;">Belum ada data piket minggu ini.</div>'; return; 
+    } 
+    var html = ''; 
+    var fbImage = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4MCIgaGVpZ2h0PSI4MCI+PHJlY3Qgd2lkdGg9IjgwIiBoZWlnaHQ9IjgwIiBmaWxsPSJ0cmFuc3BhcmVudCIvPjwvc3ZnPg=="; 
+    lb.forEach(function(item, idx) { 
+        var medal = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : '<span style="font-size:0.9rem; color:var(--text-muted);">#'+(idx+1)+'</span>')); 
+        var imgUrl = item.foto && item.foto.length > 20 ? item.foto : fbImage; 
+        html += '<div class="lb-item"><div class="lb-medal">' + medal + '</div><img src="' + imgUrl + '" class="lb-img" onerror="this.src=\'' + fbImage + '\'"><div class="lb-info"><div class="lb-name">' + esc(item.nama) + '</div><div class="lb-score">' + item.skor + ' Pts</div></div></div>'; 
+    }); 
+    container.innerHTML = html; 
+}
+
+function renderProfileData(p) { 
+    if(!p) return; 
+    var nameEl = document.getElementById('homeGreetingName'); 
+    if(nameEl) { 
+        nameEl.classList.remove('skeleton', 'skel-text'); 
+        nameEl.textContent = esc((p.nama||'Guest').split(' ')[0]); 
+    } 
+    var f = (p.foto_fileid || '').trim(); 
+    var fb = "data:image/svg+xml;base64," + btoa("<svg xmlns='http://www.w3.org/2000/svg' width='80' height='80'><rect width='80' height='80' rx='50' ry='50' fill='#f4f4f5'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='12' font-weight='600' fill='#a1a1aa'>FOTO</text></svg>"); 
+    var src = f ? "https://lh3.googleusercontent.com/d/" + encodeURIComponent(f) + "=w200" : fb; 
+    var strKelompok = userWeek > 0 ? 'Week ' + userWeek : 'Non-Aktif'; 
+    document.getElementById('profileCard').innerHTML = '<div style="display:flex; align-items:center; gap:16px;"><img class="profile-img" src="' + src + '" onerror="this.src=\'' + fb + '\'"><div><div style="font-weight:800; font-size:1.2rem; color:var(--text-head); letter-spacing:-0.5px;">' + esc(p.nama||'-') + '</div><div class="muted" style="margin-bottom:6px;">' + esc(p.email||'-') + '</div><span class="badge badge-piket">' + esc(p.divisi||'-') + '</span> <span class="badge badge-yellow">' + strKelompok + '</span></div></div>'; 
+    var avaEl = document.getElementById('homeAvatar'); 
+    if(avaEl) { 
+        avaEl.classList.remove('skeleton', 'skel-avatar'); 
+        avaEl.src = src; 
+    } 
+    window.currentUserEmail = (p.email || '').toLowerCase().trim(); 
+}
+
+function renderHistoryData(d) { 
+    var ht = document.getElementById('historyTable'); 
+    var hi = document.getElementById('historyInfo'); 
+    if(d.history && d.history.ok) { 
+        var sum = d.history.summary || {piket:0, kegiatan:0}; 
+        var bp = document.getElementById('bentoSumPiket'); 
+        var bk = document.getElementById('bentoSumKegiatan'); 
+        if(bp) { bp.classList.remove('skeleton', 'skel-bento'); bp.textContent = sum.piket; } 
+        if(bk) { bk.classList.remove('skeleton', 'skel-bento'); bk.textContent = sum.kegiatan; } 
+        if(d.history.rows.length > 0) { 
+            hi.style.display = 'none'; 
+            ht.innerHTML = d.history.rows.map(function(r) { 
+                var j = String(r.jenis || '').toUpperCase(); 
+                var si = (j === 'PIKET') ? getMasukBadge(r.checkin) : {c:'', t:''}; 
+                var ciBadge = si.t ? '<span class="badge ' + si.c + '">' + si.t + '</span>' : ''; 
+                var checkoutDisplay = r.isAutoCheckout ? '<span style="color:var(--danger); font-weight:800; font-size:0.75rem; background:rgba(255,59,48,0.15); padding:4px 8px; border-radius:8px; display:inline-block;">LUPA CHECKOUT</span>' : esc(r.checkout||'-') + ' ' + ((j === 'PIKET') ? getPulangBadge(r.checkout).t ? '<span class="badge ' + getPulangBadge(r.checkout).c + '">' + getPulangBadge(r.checkout).t + '</span>' : '' : ''); 
+                var badgeSkor = ''; 
+                var skor = Number(r.skor); 
+                if(j === 'PIKET') { 
+                    badgeSkor = skor >= 8 ? '<span style="color:var(--success); font-weight:700;">+' + skor + ' pts</span>' : (skor >= 6 ? '<span style="color:var(--warning); font-weight:700;">+' + skor + ' pts</span>' : '<span style="color:var(--danger); font-weight:700;">' + skor + ' pts</span>'); 
+                } else { 
+                    badgeSkor = skor >= 5 ? '<span style="color:var(--primary); font-weight:700;">+' + skor + ' pts</span>' : '<span style="color:var(--danger); font-weight:700;">' + skor + ' pts</span>'; 
+                } 
+                return '<div class="history-card"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;"><div style="font-weight:700; color:var(--text-head);">' + fmtDate(r.date) + ' <span style="font-size:0.7rem; color:var(--text-muted); font-weight:500; margin-left:4px; text-transform:uppercase;">' + j + '</span></div>' + badgeSkor + '</div><div class="history-row"><span class="history-label">Masuk</span><span class="history-val">' + esc(r.checkin||'-') + ' ' + ciBadge + '</span></div><div class="history-row"><span class="history-label">Keluar</span><span class="history-val">' + checkoutDisplay + '</span></div></div>'; 
+            }).join(''); 
+        } else { 
+            hi.style.display = 'block'; hi.textContent = 'Belum ada riwayat bulan ini.'; ht.innerHTML = ''; 
+        } 
+    } 
+}
+
+// =========================================================
+// FUNGSI BARU: RENDER UPCOMING EVENTS SLIDER (H+7)
+// =========================================================
+function renderUpcomingEvents() {
+    var container = document.getElementById('upcomingContainer');
+    var section = document.getElementById('upcomingSection');
+    if(!container || !section) return;
+
+    section.style.display = 'block'; 
+
+    if(!window.globalCalendarEvents || window.globalCalendarEvents.length === 0) {
+        container.innerHTML = '<div class="upcoming-empty">Yey! Nggak ada agenda 7 hari ke depan. 🎉</div>';
+        return;
+    }
+
+    var today = new Date();
+    today.setHours(0,0,0,0);
+    
+    var nextWeek = new Date(today);
+    nextWeek.setDate(today.getDate() + 7);
+    nextWeek.setHours(23,59,59,999);
+
+    var upcoming = window.globalCalendarEvents.filter(function(e) {
+        var parts = e.tanggal.split('-');
+        var evDate = new Date(parts[0], parts[1]-1, parts[2]);
+        evDate.setHours(12,0,0,0); 
+        return evDate >= today && evDate <= nextWeek;
+    });
+
+    upcoming.sort(function(a, b) {
+        var pA = a.tanggal.split('-'); var dA = new Date(pA[0], pA[1]-1, pA[2]).getTime();
+        var pB = b.tanggal.split('-'); var dB = new Date(pB[0], pB[1]-1, pB[2]).getTime();
+        return dA - dB;
+    });
+
+    if(upcoming.length === 0) {
+        container.innerHTML = '<div class="upcoming-empty">Yey! Nggak ada agenda 7 hari ke depan. 🎉</div>';
+        return;
+    }
+
+    var html = '';
+    var userMail = window.currentUserEmail || '';
+
+    upcoming.forEach(function(e) {
+        var parts = e.tanggal.split('-');
+        var evDateObj = new Date(parts[0], parts[1]-1, parts[2]);
+        evDateObj.setHours(12,0,0,0);
+        
+        var dateStr = '';
+        var todayMid = new Date(today); todayMid.setHours(12,0,0,0);
+        var diffTime = evDateObj.getTime() - todayMid.getTime();
+        var diffDays = Math.round(diffTime / (1000 * 3600 * 24));
+
+        if(diffDays === 0) dateStr = 'Hari Ini';
+        else if(diffDays === 1) dateStr = 'Besok';
+        else dateStr = evDateObj.toLocaleDateString('id-ID', { weekday:'short', day:'numeric', month:'short' });
+
+        var amIInvolved = false;
+        if(e.peserta && e.peserta.length > 0) {
+            for(var k=0; k<e.peserta.length; k++) {
+                if(e.peserta[k].email === userMail) { amIInvolved = true; break; }
+            }
+        }
+        var isCreator = (e.email === userMail);
+        var isMyEvent = (isCreator || amIInvolved);
+        var cardClass = isMyEvent ? 'my-event' : '';
+        var flagIndicator = isMyEvent ? '<span style="font-size:0.8rem; margin-left:4px; color:var(--primary);">★</span>' : '';
+
+        html += '<div class="upcoming-card ' + cardClass + '" onclick="switchTab(\'calendar\')"><div class="upcoming-date">' + dateStr + flagIndicator + '</div><div class="upcoming-title">' + esc(e.judul) + '</div><div class="upcoming-time">🕒 ' + esc(e.waktu) + '</div></div>';
+    });
+
+    container.innerHTML = html;
+}
+
+function updateHomeButtonLoading() { 
+    var btn = document.getElementById('btnHomeAction'); 
+    if(btn) { 
+        btn.className = 'btn-massive skeleton skel-btn'; 
+        btn.innerHTML = 'Loading...'; btn.disabled = true; 
+        btn.style.background = 'var(--skel-btn-bg)'; 
+        btn.style.color = 'transparent'; btn.style.boxShadow = 'none'; 
+    } 
+}
+
+function onDataSuccess(d) {
+   lastSyncTime = Date.now();
+   isSyncing = false;
+   hideSplashScreen(); 
+
+   if (!d) return; 
+   safeStorage.set('user_data_cache_v12', JSON.stringify(d)); 
+   
+   if(!d.ok) { 
+       var pc = document.getElementById('profileCard'); 
+       if(pc) pc.innerHTML = '<div style="color:var(--danger); font-size:0.9rem; padding:10px;">' + esc(d.message) + '</div>'; 
+       setMode('PRE_CHECKIN'); return; 
+   }
+   
+   if(d.profile && (d.profile.nama === 'Guest' || d.profile.nim === '-')) { 
+       document.getElementById('profileCard').innerHTML = '<div style="display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:15px 10px;"><div style="width:50px; height:50px; background:rgba(255,59,48,0.1); color:var(--danger); border-radius:25px; display:flex; justify-content:center; align-items:center; font-size:1.5rem; margin-bottom:12px;">✖</div><div style="font-weight:800; color:var(--text-head); font-size:1.1rem; margin-bottom:5px;">Akses Ditolak</div><div style="color:var(--text-muted); font-size:0.85rem; line-height:1.4;">Email UII Anda valid, namun belum didaftarkan.</div></div>'; 
+       Swal.fire('Data Tidak Ditemukan', 'Silakan hubungi admin.', 'error'); 
+       var btnHome = document.getElementById('btnHomeAction'); 
+       if(btnHome) { 
+           btnHome.className = 'btn-massive glass-panel'; btnHome.style.background='var(--glass-input)'; 
+           btnHome.style.color='var(--text-muted)'; btnHome.innerHTML = 'Hubungi Admin'; 
+           btnHome.disabled = true; btnHome.style.boxShadow = 'none'; 
+       } 
+       document.getElementById('homeGreetingName').classList.remove('skeleton', 'skel-text'); 
+       document.getElementById('homeAvatar').classList.remove('skeleton', 'skel-avatar'); 
+       document.getElementById('bentoSumPiket').classList.remove('skeleton', 'skel-bento'); 
+       document.getElementById('bentoSumPiket').textContent = '-'; 
+       document.getElementById('bentoSumKegiatan').classList.remove('skeleton', 'skel-bento'); 
+       document.getElementById('bentoSumKegiatan').textContent = '-'; 
+       document.getElementById('historyTable').innerHTML = ''; 
+       return; 
+   }
+   
+   currentWeekServer = d.currentWeek || 1; 
+   userWeek = parseInt(d.profile.week) || 0;
+   var wb = document.getElementById('weekBadgeInfo'); 
+   if(wb) wb.textContent = 'Week ' + currentWeekServer;
+   
+   renderProfileData(d.profile); 
+   var lastSt = d.todayStatus || {mode: 'PRE_CHECKIN'}; 
+   var js = (lastSt.mode === 'POST_CHECKIN') ? (lastSt.jenis || '').toUpperCase().trim() : null;
+   
+   if (d.stories) renderStoriesData(d.stories); 
+   if (d.leaderboard) renderLeaderboard(d.leaderboard);
+   if (d.activeUsers) window.globalActiveUsers = d.activeUsers;
+   
+   if (d.calendarEvents) { 
+       window.globalCalendarEvents = d.calendarEvents; 
+       renderUpcomingEvents(); 
+       if(typeof renderCalendarGrid === 'function') renderCalendarGrid(); 
+   }
+   
+   setMode(lastSt.mode, js); 
+   renderHeader(lastSt); 
+   renderHistoryData(d);
+}
+
+function loadAllData() {
+  updateHomeButtonLoading(); 
+  var isCached = false; 
+  var cached = safeStorage.get('user_data_cache_v12');
+  
+  if(cached) { 
+      try { 
+          var d = JSON.parse(cached); 
+          if(d && d.profile && d.profile.nama !== 'Guest' && d.profile.nim !== '-') { 
+              currentWeekServer = d.currentWeek || 1; 
+              userWeek = parseInt(d.profile.week) || 0; 
+              var wb = document.getElementById('weekBadgeInfo'); 
+              if(wb) wb.textContent = 'Week ' + currentWeekServer; 
+              renderProfileData(d.profile); 
+              var lastSt = d.todayStatus || {mode: 'PRE_CHECKIN'}; 
+              var js = (lastSt.mode === 'POST_CHECKIN') ? (lastSt.jenis || '').toUpperCase().trim() : null; 
+              if(d.stories) renderStoriesData(d.stories); 
+              if(d.leaderboard) renderLeaderboard(d.leaderboard); 
+              if(d.activeUsers) window.globalActiveUsers = d.activeUsers; 
+              if(d.calendarEvents) { 
+                  window.globalCalendarEvents = d.calendarEvents; 
+                  renderUpcomingEvents(); 
+                  if(typeof renderCalendarGrid === 'function') renderCalendarGrid(); 
+              } 
+              setMode(lastSt.mode, js); renderHeader(lastSt); renderHistoryData(d); isCached = true; 
+          } 
+      } catch(e) { } 
+  }
+  
+  if(typeof google === 'undefined') { setTimeout(function() { hideSplashScreen(); }, 2000); return; }
+  
+  google.script.run.withSuccessHandler(function(d) { 
+      try { onDataSuccess(d); } catch(e) { if(!isCached) setMode('PRE_CHECKIN'); hideSplashScreen(); } 
+  }).withFailureHandler(function(e) { 
+      hideSplashScreen(); 
+      if(!isCached) { 
+          document.getElementById('profileCard').innerHTML = '<div style="color:var(--danger);">' + esc(e.message) + '</div>'; 
+          Swal.fire('Gagal', 'Koneksi ke Google bermasalah.', 'error'); setMode('PRE_CHECKIN'); 
+      } 
+  }).getInitialData();
+}
+
+document.addEventListener('DOMContentLoaded', function() { 
+    initTheme(); updateClock(); 
+    if(typeof L !== 'undefined') { setTimeout(function(){ initMap(); }, 500); } 
+    loadAllData(); initModalDrag(); 
+});
+
+function checkin(j) { 
+    if(!posData) { Swal.fire('Lokasi?', 'Tekan tombol deteksi lokasi.', 'warning'); return; } 
+    if(!selfieUrl) { Swal.fire('Foto?', 'Ambil selfie verifikasi.', 'warning'); return; } 
+    if(!currentMood) { Swal.fire('Mood?', 'Pilih mood kamu hari ini.', 'warning'); return; } 
+    Swal.fire({ title: 'Check-In', text: 'Yakin ingin Check-In ' + j + '?', icon: 'question', showCancelButton: true, confirmButtonColor: 'var(--primary)', cancelButtonColor: 'transparent', confirmButtonText: 'Ya, Lanjut', cancelButtonText: '<span style="color:var(--text-main)">Batal</span>' }).then(function(result) { 
+        if (result.isConfirmed) { 
+            var now = new Date(); var currentMin = now.getHours() * 60 + now.getMinutes(); var threshold = 9 * 60 + 15; 
+            if(String(j).toUpperCase() === 'PIKET' && currentMin > threshold) handleLateCheckin(j); 
+            else doCheckin(j, null); 
+        } 
+    }); 
+}
+
+function handleLateCheckin(j) { 
+    Swal.fire({title:'Terlambat', text:"Piket telat. Lanjut?", icon:'warning', showCancelButton:true, confirmButtonText:'Lanjut', confirmButtonColor:'var(--primary)'}).then(function(res) { 
+        if(res.isConfirmed) showReasonForm(j); 
+    }); 
+}
+
+function showReasonForm(j) { 
+    Swal.fire({ 
+        title: 'Alasan Telat', 
+        html: '<div style="text-align:left; margin-top:10px;"><label style="display:block; margin-bottom:10px;"><input type="radio" name="lateReason" value="AKADEMIK" onchange="toggleLateInputs(this.value)"> Akademik / Kelas</label><div id="div-akademik" style="display:none; margin-bottom:15px;"><input type="text" id="input-matkul" placeholder="Mata Kuliah" style="width:100%; padding:12px; border-radius:12px; border:1px solid var(--border-color); margin-bottom:8px; background:var(--glass-input);"><input type="text" id="input-jam" placeholder="Jam" style="width:100%; padding:12px; border-radius:12px; border:1px solid var(--border-color); background:var(--glass-input);"></div><label style="display:block;"><input type="radio" name="lateReason" value="PRIBADI" onchange="toggleLateInputs(this.value)"> Pribadi</label><div id="div-pribadi" style="display:none; margin-top:10px;"><input type="text" id="input-alasan" placeholder="Tulis alasan..." style="width:100%; padding:12px; border-radius:12px; border:1px solid var(--border-color); background:var(--glass-input);"></div></div>', 
+        showCancelButton: true, confirmButtonText: 'Submit', confirmButtonColor: 'var(--primary)', 
+        preConfirm: function() { 
+            var rt = document.querySelector('input[name="lateReason"]:checked'); 
+            if(!rt) { Swal.showValidationMessage('Pilih alasan'); return false; } 
+            var val = rt.value; var det = ''; 
+            if(val==='AKADEMIK'){ 
+                var m=document.getElementById('input-matkul').value; var jamInput=document.getElementById('input-jam').value; 
+                if(!m||!jamInput){Swal.showValidationMessage('Lengkapi data');return false;} 
+                det=m + ' (' + jamInput + ')'; 
+            } else { 
+                var a=document.getElementById('input-alasan').value; 
+                if(!a){Swal.showValidationMessage('Isi alasan');return false;} 
+                det=a; 
+            } 
+            return {type:val, detail:det}; 
+        } 
+    }).then(function(res) { 
+        if(res.isConfirmed) doCheckin(j, res.value); 
+    }); 
+} 
+
+window.toggleLateInputs = function(val) { 
+    document.getElementById('div-akademik').style.display = (val === 'AKADEMIK' ? 'block' : 'none'); 
+    document.getElementById('div-pribadi').style.display = (val === 'PRIBADI' ? 'block' : 'none'); 
+}
+
+function doCheckin(j, lateData) { 
+    showLoad(true, 'Sedang Check-In...'); 
+    var pl = { jenis: j, aksi: 'CHECKIN', lat: posData.lat, lng: posData.lng, akurasi: posData.akurasi, catatan_jobdesk: '', selfie_url: selfieUrl, pose: currentPose, mood: currentMood }; 
+    if(lateData) pl.alasan_telat = lateData.type + ' - ' + lateData.detail; 
+    
+    // Using setTimeout to simulate network request in Canvas preview.
+    // In real app, remove this and use google.script.run
+    if(typeof google !== 'undefined') {
+        google.script.run.withSuccessHandler(function(r){ 
+            showSuccessCheckmark('Berhasil!').then(() => {
+                showLoad(false); 
+                Swal.fire({title:'Berhasil!',text:r.message,icon:'success',timer:2000,showConfirmButton:false}); 
+                resetCamera(); loadAllData(); closeCheckinModal(); 
+            });
+        }).withFailureHandler(function(e){ 
+            showLoad(false); Swal.fire('Gagal',safeErr(e),'error'); 
+        }).submitAttendance(pl); 
+    } else {
+        setTimeout(() => {
+             showSuccessCheckmark('Berhasil!').then(() => {
+                showLoad(false); 
+                resetCamera(); closeCheckinModal(); 
+             });
+        }, 1500);
+    }
+}
+
+function checkout(j) { 
+    if(!posData) { Swal.fire('Lokasi?', 'Tekan tombol deteksi lokasi.', 'warning'); return; } 
+    if(!selfieUrl) { Swal.fire('Foto?', 'Ambil selfie verifikasi.', 'warning'); return; } 
+    var jd = document.getElementById('jobdesk').value.trim(); 
+    if(!jd) { Swal.fire('Aktivitas?', 'Isi catatan apa yang kamu kerjakan.', 'warning'); return; } 
+    if(!currentMood) { Swal.fire('Mood?', 'Pilih mood kamu.', 'warning'); return; } 
+    Swal.fire({ title: 'Check-Out', text: 'Selesai ' + j + '?', icon: 'question', showCancelButton: true, confirmButtonColor: 'var(--primary)', cancelButtonColor: 'transparent', confirmButtonText: 'Ya, Selesai', cancelButtonText: '<span style="color:var(--text-main)">Batal</span>' }).then(function(result) { 
+        if (result.isConfirmed) { 
+            if(String(j).toUpperCase()==='PIKET') { 
+                var n=new Date(); 
+                if(n.getHours()*60+n.getMinutes()<17*60) { 
+                    Swal.fire({title:'Pulang Awal',text:'Belum jam 17.00. Lanjut?',icon:'question',showCancelButton:true,confirmButtonColor:'var(--primary)'}).then(function(res){
+                        if(res.isConfirmed) doCheckout(j,jd);
+                    }); return; 
+                } 
+            } 
+            doCheckout(j, jd); 
+        } 
+    }); 
+}
+
+function doCheckout(j, jd) { 
+    showLoad(true, 'Sedang Check-Out...'); 
+    if(typeof google !== 'undefined') {
+        google.script.run.withSuccessHandler(function(r){ 
+            showSuccessCheckmark('Selesai!').then(() => {
+                showLoad(false); 
+                Swal.fire({title:'Berhasil!',text:r.message,icon:'success',timer:2000,showConfirmButton:false}); 
+                document.getElementById('jobdesk').value=''; resetCamera(); loadAllData(); closeCheckinModal(); 
+            });
+        }).withFailureHandler(function(e){ 
+            showLoad(false); Swal.fire('Gagal',safeErr(e),'error'); 
+        }).submitAttendance({ jenis: j, aksi: 'CHECKOUT', lat: posData.lat, lng: posData.lng, akurasi: posData.akurasi, catatan_jobdesk: jd, selfie_url: selfieUrl, pose: currentPose, mood: currentMood }); 
+    } else {
+        setTimeout(() => {
+             showSuccessCheckmark('Selesai!').then(() => {
+                showLoad(false); 
+                document.getElementById('jobdesk').value=''; resetCamera(); closeCheckinModal(); 
+             });
+        }, 1500);
+    }
+}
+
+// ========================================================
+// TRIK PULL TO REFRESH GAYA APPLE (SANGAT SINGKAT)
+// ========================================================
+let pY=0, pPull=0;
+const appEl = document.getElementById('appMain');
+const pSpin = document.getElementById('ptr-spin');
+
+document.addEventListener('touchstart', e => { 
+    if(window.scrollY === 0) pY = e.touches[0].clientY; 
+}, {passive: true});
+
+document.addEventListener('touchmove', e => {
+    if(pY > 0 && window.scrollY === 0) {
+        pPull = (e.touches[0].clientY - pY) * 0.4; // 0.4 adalah efek berat ditarik (karet)
+        if(pPull > 0) { 
+            appEl.style.transition = 'none'; 
+            appEl.style.transform = `translateY(${pPull}px)`; 
+            pSpin.style.transform = `rotate(${pPull * 8}deg)`; // Spinner ikut muter saat ditarik
+            if(e.cancelable) e.preventDefault(); 
+        }
+    }
+}, {passive: false});
+
+document.addEventListener('touchend', () => {
+    if(pPull > 0) {
+        appEl.style.transition = 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)';
+        if(pPull > 60) { // Batas ditarik minimal 60px baru refresh
+            appEl.style.transform = 'translateY(50px)'; 
+            pSpin.style.animation = 'spin 0.6s linear infinite';
+            isSyncing = true; // Kunci biar background sync gak ikut jalan
+            
+            if(typeof google !== 'undefined') {
+                google.script.run.withSuccessHandler(d => { 
+                    onDataSuccess(d); endPTR(); 
+                }).withFailureHandler(endPTR).getInitialData();
+            } else {
+                setTimeout(endPTR, 1000); // Buat ngetes kalau offline
+            }
+        } else {
+            endPTR(); // Batal karena nariknya kurang jauh
+        }
+    }
+    pY = 0; pPull = 0;
+});
+
+function endPTR() { 
+    appEl.style.transform = ''; 
+    pSpin.style.animation = 'none'; 
+    isSyncing = false; 
+}
+// ========================================================
+
+</script>
+</body>
+</html>
