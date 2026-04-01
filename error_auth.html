@@ -1,0 +1,148 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Akses Terkunci</title>
+<style>
+  :root {
+    --bg-body: #f2f2f7; 
+    --glass-bg: rgba(255, 255, 255, 0.65);
+    --glass-border: rgba(255, 255, 255, 0.8); 
+    --glass-input: rgba(255, 255, 255, 0.5);
+    --text-main: #3a3a3c;
+    --text-head: #000000; 
+    --text-muted: #8e8e93; 
+    --primary: #0a84ff;
+    --danger: #ff3b30; 
+    --success: #34c759; 
+    --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.04);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg-body: #000000; 
+      --glass-bg: rgba(28, 28, 30, 0.65);
+      --glass-border: rgba(255, 255, 255, 0.1); 
+      --glass-input: rgba(44, 44, 46, 0.5);
+      --text-main: #ebebf5;
+      --text-head: #ffffff; 
+      --text-muted: #98989d;
+      --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.4);
+    }
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+    margin: 0; 
+    padding: 20px; 
+    background-color: var(--bg-body); 
+    color: var(--text-main);
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    min-height: 100vh;
+  }
+  .glass-panel {
+     background: var(--glass-bg); 
+     backdrop-filter: blur(24px) saturate(180%);
+     -webkit-backdrop-filter: blur(24px) saturate(180%);
+     border: 1px solid var(--glass-border); 
+     box-shadow: var(--shadow-glass);
+     border-radius: 32px; 
+     padding: 30px; 
+     max-width: 400px; 
+     width: 100%; 
+     text-align: center;
+  }
+  .icon-box {
+      width: 80px; 
+      height: 80px; 
+      background: rgba(255, 59, 48, 0.15); 
+      color: var(--danger);
+      border-radius: 40px; 
+      display: flex; 
+      justify-content: center; 
+      align-items: center;
+      font-size: 2.5rem; 
+      margin: 0 auto 15px auto;
+  }
+  h1 { 
+      font-size: 1.5rem; 
+      color: var(--text-head); 
+      margin: 0 0 10px 0; 
+      letter-spacing: -0.5px;
+  }
+  p { 
+      font-size: 0.95rem; 
+      line-height: 1.5; 
+      color: var(--text-muted); 
+      margin-bottom: 20px;
+  }
+  .email-box {
+      background: var(--glass-input);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 25px;
+  }
+  .email-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+  }
+  .email-value {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--danger);
+      word-break: break-all;
+  }
+  button {
+      color: #fff; 
+      border: none; 
+      padding: 18px; 
+      width: 100%;
+      border-radius: 18px; 
+      font-size: 1.05rem; 
+      font-weight: 700; 
+      cursor: pointer;
+      transition: transform 0.2s; 
+      display: flex; 
+      justify-content: center; 
+      align-items: center; 
+      gap: 8px;
+  }
+  button:active { 
+      transform: scale(0.96); 
+  }
+  .btn-primary {
+      background: linear-gradient(135deg, var(--primary) 0%, #0056cc 100%);
+      box-shadow: 0 8px 20px rgba(10, 132, 255, 0.3); 
+  }
+</style>
+</head>
+<body>
+
+<div class="glass-panel">
+    <div class="icon-box">🔒</div>
+    <h1>Otentikasi Diperlukan</h1>
+    <p>Aplikasi ini hanya dapat diakses menggunakan email kampus UII.</p>
+    
+    <!-- KOTAK INFO EMAIL YANG TERDETEKSI -->
+    <div class="email-box">
+        <div class="email-label">Sistem Mendeteksi Akun:</div>
+        <div class="email-value">
+            <!-- Logika: Jika userEmail ada isinya, tampilkan. Jika kosong, tuliskan Akun Pribadi -->
+            <?= userEmail ? userEmail : 'Akun Pribadi (Disembunyikan)' ?>
+        </div>
+    </div>
+    
+    <!-- TOMBOL GANTI AKUN -->
+    <a href="https://accounts.google.com/AccountChooser?continue=<?= scriptUrl ?>" target="_top" style="text-decoration: none;">
+        <button class="btn-primary">🔑 Login / Ganti Akun Kampus</button>
+    </a>
+</div>
+
+</body>
+</html>
