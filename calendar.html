@@ -1,0 +1,337 @@
+<!-- ========================================================
+     MODUL KALENDER (MODAL BOTTOM SHEET & EDIT EVENT)
+========================================================= -->
+
+<style>
+    .cal-header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 0 5px; }
+    .cal-title-box { font-size: 1.6rem; font-weight: 800; color: var(--text-head); letter-spacing: -0.5px; }
+    .cal-btn-nav { background: var(--glass-input); border: none; width: 40px; height: 40px; border-radius: 20px; color: var(--text-head); font-size: 1.2rem; cursor: pointer; display: flex; justify-content: center; align-items: center; transition: 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+    .cal-btn-nav:active { transform: scale(0.9); }
+    
+    .cal-grid-header { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; }
+    .cal-grid-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+    .cal-day-cell { aspect-ratio: 1; border-radius: 14px; display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 1rem; font-weight: 600; color: var(--text-head); cursor: pointer; transition: all 0.2s; position: relative; border: 2px solid transparent; }
+    .cal-day-cell:active { transform: scale(0.95); }
+    .cal-day-cell.empty { background: transparent; pointer-events: none; }
+    .cal-day-cell.today { background: rgba(10, 132, 255, 0.15); color: var(--primary); }
+    .cal-day-cell.selected { border-color: var(--primary); background: var(--glass-input); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .cal-day-cell.has-event::after { content: ''; position: absolute; bottom: 6px; width: 6px; height: 6px; background-color: var(--danger); border-radius: 50%; }
+    
+    .event-list-container { margin-top: 24px; }
+    .event-date-title { font-size: 1.1rem; font-weight: 800; color: var(--text-head); margin-bottom: 12px; }
+    
+    /* KARTU EVENT */
+    .event-card { background: var(--glass-input); border-radius: 20px; padding: 16px; margin-bottom: 12px; border: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; transition: all 0.3s ease; }
+    .event-card.my-event { border: 2px solid var(--primary); background: rgba(10, 132, 255, 0.05); box-shadow: 0 4px 15px rgba(10, 132, 255, 0.15); }
+    .event-card.other-event { opacity: 0.6; border-color: transparent; }
+
+    .event-time { font-size: 0.8rem; font-weight: 700; color: var(--primary); background: rgba(10, 132, 255, 0.1); padding: 4px 8px; border-radius: 8px; display: inline-block; margin-bottom: 6px; }
+    .event-title { font-weight: 700; color: var(--text-head); font-size: 1rem; line-height: 1.3; margin-bottom: 4px;}
+    .event-author { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px; }
+    .event-invites { font-size: 0.75rem; color: var(--text-head); background: var(--glass-bg); padding: 6px 10px; border-radius: 10px; display: inline-block; font-weight: 500;}
+
+    /* TOMBOL ACTION PADA KARTU */
+    .event-btn-del { background: rgba(255, 59, 48, 0.1); color: var(--danger); border: none; width: 36px; height: 36px; border-radius: 18px; font-size: 1rem; display: flex; justify-content: center; align-items: center; cursor: pointer; }
+    .event-btn-edit { background: rgba(10, 132, 255, 0.1); color: var(--primary); border: none; width: 36px; height: 36px; border-radius: 18px; font-size: 1rem; display: flex; justify-content: center; align-items: center; cursor: pointer; }
+    .event-empty { text-align: center; color: var(--text-muted); font-size: 0.9rem; padding: 20px 0; }
+    
+    .fab-add { position: fixed; bottom: 100px; right: 20px; width: 60px; height: 60px; border-radius: 30px; background: linear-gradient(135deg, var(--primary) 0%, #0056cc 100%); color: white; font-size: 2rem; border: none; box-shadow: 0 10px 25px rgba(10, 132, 255, 0.4); display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 1000; transition: transform 0.2s; }
+    .fab-add:active { transform: scale(0.9); }
+    
+    /* INPUT STYLE MODAL CALENDAR */
+    .swal-cal-input { width: 100%; padding: 14px; margin-bottom: 12px; border-radius: 14px; border: 1px solid var(--glass-border); background: var(--glass-input); color: var(--text-main); font-family: inherit; font-size: 1rem; box-sizing: border-box; }
+    .swal-cal-input:focus { outline: none; border-color: var(--primary); }
+    .swal-cal-label { text-align: left; display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-head); margin-bottom: 6px; }
+    .invite-box { max-height: 140px; overflow-y: auto; background: var(--glass-input); border: 1px solid var(--glass-border); border-radius: 14px; padding: 10px; text-align: left; margin-bottom: 12px;}
+    .invite-item { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 0.9rem; color: var(--text-head); font-weight: 500;}
+    .invite-item input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--primary); }
+</style>
+
+<div style="padding: 0 5px;">
+    <div class="cal-header-top">
+        <button class="cal-btn-nav" onclick="changeMonth(-1)">❮</button>
+        <div class="cal-title-box" id="calMonthYearTitle">Bulan Tahun</div>
+        <button class="cal-btn-nav" onclick="changeMonth(1)">❯</button>
+    </div>
+
+    <div class="card glass-panel" style="padding: 15px;">
+        <div class="cal-grid-header">
+            <div>Min</div><div>Sen</div><div>Sel</div><div>Rab</div><div>Kam</div><div>Jum</div><div>Sab</div>
+        </div>
+        <div class="cal-grid-days" id="calGridDays"></div>
+    </div>
+
+    <div class="event-list-container">
+        <div class="event-date-title" id="calSelectedDateText">Pilih Tanggal</div>
+        <div id="calEventList"></div>
+    </div>
+</div>
+
+<button class="fab-add" onclick="openEventModal()">+</button>
+
+<!-- ========================================== -->
+<!-- MODAL BOTTOM SHEET UNTUK TAMBAH/EDIT EVENT -->
+<!-- ========================================== -->
+<div id="eventModal" class="modal">
+   <div class="modal-content glass-panel">
+      <div class="modal-drag-handle"></div>
+      <div class="modal-header">
+         <span class="modal-title" id="eventModalTitle">Tambah Jadwal</span>
+         <button class="close-btn" onclick="closeEventModal()">✕</button>
+      </div>
+      
+      <div class="card" style="background:var(--glass-input); border:1px solid var(--glass-border); box-shadow:none; margin-bottom:40px;">
+          <!-- INPUT HIDDEN UNTUK MENYIMPAN ID JIKA SEDANG EDIT -->
+          <input type="hidden" id="evId">
+          
+          <label class="swal-cal-label">Judul Acara</label>
+          <input type="text" id="evJudul" class="swal-cal-input" placeholder="Misal: Rapat Divisi IT">
+          
+          <label class="swal-cal-label">Tanggal</label>
+          <input type="date" id="evTanggal" class="swal-cal-input">
+          
+          <label class="swal-cal-label">Waktu (Jam)</label>
+          <div style="display:flex; gap:10px;">
+              <input type="time" id="evJamMulai" class="swal-cal-input" style="flex:1;">
+              <span style="align-self:center; font-weight:bold; margin-bottom:12px;">-</span>
+              <input type="time" id="evJamSelesai" class="swal-cal-input" style="flex:1;">
+          </div>
+          
+          <label class="swal-cal-label">Undang Peserta (Piket Aktif)</label>
+          <div class="invite-box" id="evPesertaContainer">
+              <!-- Rendered by JS -->
+          </div>
+          
+          <button class="primary" onclick="saveCalendarEventData()" style="border-radius:24px; font-size:1.1rem; padding:18px; margin-top:10px;">Simpan Jadwal</button>
+      </div>
+   </div>
+</div>
+
+
+<script>
+    var currentCalDate = new Date();
+    var selectedCalDate = new Date();
+    var monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+
+    function formatYYYYMMDD(dateObj) {
+        var y = dateObj.getFullYear(); var m = dateObj.getMonth() + 1; var d = dateObj.getDate();
+        return y + '-' + (m < 10 ? '0' + m : m) + '-' + (d < 10 ? '0' + d : d);
+    }
+
+    function renderCalendarGrid() {
+        var year = currentCalDate.getFullYear(); var month = currentCalDate.getMonth();
+        document.getElementById('calMonthYearTitle').textContent = monthNames[month] + ' ' + year;
+        
+        var firstDay = new Date(year, month, 1).getDay(); var daysInMonth = new Date(year, month + 1, 0).getDate();
+        var grid = document.getElementById('calGridDays'); grid.innerHTML = '';
+        for (var i = 0; i < firstDay; i++) { grid.innerHTML += '<div class="cal-day-cell empty"></div>'; }
+        
+        var todayStr = formatYYYYMMDD(new Date()); var selectedStr = formatYYYYMMDD(selectedCalDate);
+        
+        for (var j = 1; j <= daysInMonth; j++) {
+            var cellDate = new Date(year, month, j); var cellDateStr = formatYYYYMMDD(cellDate);
+            var classes = ['cal-day-cell'];
+            if (cellDateStr === todayStr) classes.push('today');
+            if (cellDateStr === selectedStr) classes.push('selected');
+            
+            var hasEvent = false;
+            if (window.globalCalendarEvents) {
+                for (var k = 0; k < window.globalCalendarEvents.length; k++) {
+                    if (window.globalCalendarEvents[k].tanggal === cellDateStr) { hasEvent = true; break; }
+                }
+            }
+            if (hasEvent) classes.push('has-event');
+            
+            grid.innerHTML += '<div class="' + classes.join(' ') + '" onclick="selectCalDate(' + year + ', ' + month + ', ' + j + ')">' + j + '</div>';
+        }
+        renderEventList();
+    }
+
+    function changeMonth(dir) { currentCalDate.setMonth(currentCalDate.getMonth() + dir); renderCalendarGrid(); }
+    function selectCalDate(year, month, day) { selectedCalDate = new Date(year, month, day); renderCalendarGrid(); }
+
+    function renderEventList() {
+        var listDiv = document.getElementById('calEventList'); var titleDiv = document.getElementById('calSelectedDateText');
+        var selectedStr = formatYYYYMMDD(selectedCalDate);
+        var displayDateStr = selectedCalDate.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+        
+        titleDiv.textContent = displayDateStr;
+        if (!window.globalCalendarEvents) window.globalCalendarEvents = [];
+        
+        var dayEvents = [];
+        for (var i = 0; i < window.globalCalendarEvents.length; i++) {
+            if (window.globalCalendarEvents[i].tanggal === selectedStr) dayEvents.push(window.globalCalendarEvents[i]);
+        }
+        
+        if (dayEvents.length === 0) { listDiv.innerHTML = '<div class="event-empty">Tidak ada jadwal di tanggal ini.</div>'; return; }
+        
+        var html = '';
+        var userMail = window.currentUserEmail || '';
+
+        for (var j = 0; j < dayEvents.length; j++) {
+            var e = dayEvents[j];
+            var isCreator = (userMail === e.email);
+            
+            var amIInvolved = false; var namaPesertaArr = [];
+            if(e.peserta && e.peserta.length > 0) {
+                for(var k=0; k<e.peserta.length; k++) {
+                    namaPesertaArr.push(e.peserta[k].nama);
+                    if(e.peserta[k].email === userMail) amIInvolved = true;
+                }
+            }
+
+            var cardStyleClass = (isCreator || amIInvolved) ? 'my-event' : 'other-event';
+            
+            // TOMBOL HAPUS & EDIT
+            var btnEdit = isCreator ? '<button class="event-btn-edit" onclick="openEventModal(\'' + e.id + '\')">✏️</button>' : '';
+            var btnDelete = isCreator ? '<button class="event-btn-del" onclick="deleteEventPrompt(\'' + e.id + '\')">🗑️</button>' : '';
+            var actionBtns = isCreator ? '<div style="display:flex; flex-direction:column; gap:8px;">' + btnEdit + btnDelete + '</div>' : '';
+            
+            var htmlPeserta = '';
+            if(namaPesertaArr.length > 0) {
+                htmlPeserta = '<div class="event-invites">👥 ' + esc(namaPesertaArr.join(', ')) + '</div>';
+            } else {
+                htmlPeserta = '<div class="event-invites" style="opacity:0.6;">(Tidak ada invite khusus)</div>';
+            }
+            
+            html += '<div class="event-card ' + cardStyleClass + '"><div style="flex:1; padding-right:10px;"><span class="event-time">' + esc(e.waktu) + '</span><div class="event-title">' + esc(e.judul) + '</div><div class="event-author">Oleh: ' + esc(e.nama) + '</div>' + htmlPeserta + '</div>' + actionBtns + '</div>';
+        }
+        listDiv.innerHTML = html;
+    }
+
+    // FUNGSI MEMBUKA MODAL BOTTOM SHEET
+    function openEventModal(eventId = null) {
+        var modal = document.getElementById('eventModal');
+        var content = modal.querySelector('.modal-content');
+        if (content) { content.style.transform = ''; content.scrollTop = 0; }
+        
+        // Buat HTML List Checklist
+        var usersHTML = '';
+        if(window.globalActiveUsers && window.globalActiveUsers.length > 0) {
+            for(var i=0; i<window.globalActiveUsers.length; i++) {
+                var u = window.globalActiveUsers[i];
+                usersHTML += '<label class="invite-item"><input type="checkbox" class="chk-peserta" data-email="' + u.email + '" data-nama="' + u.nama + '" id="chk_ev_' + i + '"> ' + u.nama + '</label>';
+            }
+        } else {
+            usersHTML = '<div style="font-size:0.8rem; color:var(--text-muted);">Belum ada data anggota aktif.</div>';
+        }
+        document.getElementById('evPesertaContainer').innerHTML = usersHTML;
+
+        if (eventId) {
+            // ======= MODE EDIT =======
+            document.getElementById('eventModalTitle').textContent = 'Edit Jadwal';
+            var ev = null;
+            for(var x=0; x<window.globalCalendarEvents.length; x++) {
+                if(window.globalCalendarEvents[x].id === eventId) { ev = window.globalCalendarEvents[x]; break; }
+            }
+            
+            if(ev) {
+                document.getElementById('evId').value = ev.id;
+                document.getElementById('evJudul').value = ev.judul;
+                document.getElementById('evTanggal').value = ev.tanggal;
+                
+                var w = ev.waktu.split(' - ');
+                document.getElementById('evJamMulai').value = w[0] ? w[0].trim() : '';
+                document.getElementById('evJamSelesai').value = w[1] ? w[1].trim() : '';
+                
+                // Centang checkbox peserta lama
+                if(ev.peserta && ev.peserta.length > 0) {
+                    var checkboxes = document.querySelectorAll('.chk-peserta');
+                    for(var c=0; c<checkboxes.length; c++) {
+                        var cEmail = checkboxes[c].getAttribute('data-email');
+                        var isChecked = false;
+                        for(var p=0; p<ev.peserta.length; p++) {
+                            if(ev.peserta[p].email === cEmail) { isChecked = true; break; }
+                        }
+                        if(isChecked) checkboxes[c].checked = true;
+                    }
+                }
+            }
+        } else {
+            // ======= MODE TAMBAH BARU =======
+            document.getElementById('eventModalTitle').textContent = 'Tambah Jadwal';
+            document.getElementById('evId').value = '';
+            document.getElementById('evJudul').value = '';
+            document.getElementById('evTanggal').value = formatYYYYMMDD(selectedCalDate);
+            document.getElementById('evJamMulai').value = '';
+            document.getElementById('evJamSelesai').value = '';
+        }
+        
+        modal.classList.add('show');
+    }
+
+    // FUNGSI MENUTUP MODAL
+    function closeEventModal() {
+        var m = document.getElementById('eventModal'); m.classList.remove('show');
+        setTimeout(function() { var content = m.querySelector('.modal-content'); if(content) content.style.transform = ''; }, 400);
+    }
+
+    // FUNGSI MENYIMPAN DATA (TAMBAH/EDIT)
+    function saveCalendarEventData() {
+        var evId = document.getElementById('evId').value;
+        var judul = document.getElementById('evJudul').value.trim();
+        var tanggal = document.getElementById('evTanggal').value;
+        var jMulai = document.getElementById('evJamMulai').value;
+        var jSelesai = document.getElementById('evJamSelesai').value;
+        
+        if (!judul || !tanggal || !jMulai) {
+            Swal.fire('Data Tidak Lengkap', 'Judul, Tanggal, dan Jam Mulai wajib diisi!', 'warning');
+            return;
+        }
+        
+        var waktu = jSelesai ? jMulai + ' - ' + jSelesai : jMulai;
+        var selectedPeserta = [];
+        var checkboxes = document.querySelectorAll('.chk-peserta:checked');
+        for(var c=0; c<checkboxes.length; c++) {
+            selectedPeserta.push({
+                email: checkboxes[c].getAttribute('data-email'),
+                nama: checkboxes[c].getAttribute('data-nama')
+            });
+        }
+        
+        var payload = { judul: judul, tanggal: tanggal, waktu: waktu, peserta: selectedPeserta };
+        
+        showLoad(true);
+        if (evId !== '') {
+            // EKSEKUSI UPDATE
+            payload.id = evId;
+            google.script.run.withSuccessHandler(function(res) { handleSaveRes(res); }).withFailureHandler(function(err) { showLoad(false); Swal.fire('Error', safeErr(err), 'error'); }).editCalendarEvent(payload);
+        } else {
+            // EKSEKUSI CREATE
+            google.script.run.withSuccessHandler(function(res) { handleSaveRes(res); }).withFailureHandler(function(err) { showLoad(false); Swal.fire('Error', safeErr(err), 'error'); }).addCalendarEvent(payload);
+        }
+    }
+
+    function handleSaveRes(res) {
+        showLoad(false);
+        if(res.ok) {
+            closeEventModal();
+            Swal.fire({title: 'Tersimpan!', text: res.message, icon: 'success', timer: 1500, showConfirmButton: false});
+            window.globalCalendarEvents = res.events;
+            renderCalendarGrid();
+            if(typeof renderHomeEventWidget === 'function') renderHomeEventWidget(res.events);
+        } else {
+            Swal.fire('Gagal', res.message, 'error');
+        }
+    }
+
+    function deleteEventPrompt(eventId) {
+        Swal.fire({ title: 'Hapus Event?', text: "Event yang dihapus tidak bisa dikembalikan.", icon: 'warning', showCancelButton: true, confirmButtonColor: 'var(--danger)', cancelButtonColor: 'transparent', confirmButtonText: 'Ya, Hapus', cancelButtonText: '<span style="color:var(--text-main)">Batal</span>', customClass: { popup: 'glass-panel' }
+        }).then(function(result) {
+            if (result.isConfirmed) {
+                showLoad(true);
+                google.script.run.withSuccessHandler(function(res) {
+                    showLoad(false);
+                    if(res.ok) {
+                        Swal.fire({title: 'Dihapus!', icon: 'success', timer: 1500, showConfirmButton: false});
+                        window.globalCalendarEvents = res.events;
+                        renderCalendarGrid();
+                        if(typeof renderHomeEventWidget === 'function') renderHomeEventWidget(res.events);
+                    } else { Swal.fire('Gagal', res.message, 'error'); }
+                }).withFailureHandler(function(err) {
+                    showLoad(false); Swal.fire('Error', safeErr(err), 'error');
+                }).deleteCalendarEvent(eventId);
+            }
+        });
+    }
+</script>
