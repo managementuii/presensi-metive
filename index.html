@@ -365,7 +365,7 @@
   .btn-massive { background: linear-gradient(135deg, var(--primary) 0%, #0056cc 100%); color: white; font-size: 1.1rem; padding: 22px; border-radius: 28px; width: 100%; border: none; cursor: pointer; font-weight: 700; display: flex; justify-content: center; align-items: center; gap: 10px; transition: all 0.2s; box-shadow: 0 10px 25px rgba(10, 132, 255, 0.4); }
   .btn-massive:active { transform: scale(0.96); box-shadow: 0 5px 15px rgba(10, 132, 255, 0.3); }
 
-  /* ================= UPCOMING EVENTS SLIDER (FITUR BARU) ================= */
+  /* ================= UPCOMING EVENTS SLIDER ================= */
   .upcoming-section { margin-bottom: 24px; }
   .upcoming-header { 
       font-weight: 800; color: var(--text-head); margin-bottom: 12px; 
@@ -440,14 +440,12 @@
   <div class="splash-spinner"></div>
 </div>
 
-<!-- LOADING SPINNER (APPLE PROGRESS RING STYLE) -->
+<!-- LOADING SPINNER -->
 <div id="loader">
     <div class="apple-spinner-container">
-        <!-- The Spinner Ring -->
         <svg class="apple-spinner" id="spinnerGraphic" viewBox="0 0 50 50">
             <circle cx="25" cy="25" r="20"></circle>
         </svg>
-        <!-- The Success Checkmark (Hidden initially) -->
         <svg class="apple-success" id="successGraphic" viewBox="0 0 50 50">
             <circle cx="25" cy="25" r="20"></circle>
             <path d="M16 26l6 6 13-13"></path>
@@ -468,14 +466,11 @@
 
 <!-- WRAPPER APLIKASI (Untuk Pull To Refresh) -->
 <div class="app" id="appMain">
-    <!-- SPINNER PULL TO REFRESH GAYA APPLE -->
     <div style="position:absolute; top:-40px; left:0; width:100%; display:flex; justify-content:center; align-items:center;">
         <div id="ptr-spin" style="width:24px; height:24px; border:2.5px solid var(--glass-border); border-top:2.5px solid var(--text-muted); border-radius:50%; transition: none;"></div>
     </div>
 
-    <!-- =============================================== -->
     <!-- TAB 1: BERANDA -->
-    <!-- =============================================== -->
     <div id="view-home" class="view-section active">
        <div class="home-topbar">
            <div class="home-greeting-box">
@@ -497,14 +492,12 @@
        </div>
        </div>
 
-       <!-- FITUR BARU: UPCOMING EVENTS SLIDER (H+7) -->
        <div class="upcoming-section" id="upcomingSection" style="display:none;">
            <div class="upcoming-header">
                <span>📌 Agenda 7 Hari Ke Depan</span>
                <span style="font-size: 0.75rem; color: var(--primary); font-weight: 700; cursor:pointer;" onclick="switchTab('calendar')">Lihat Semua</span>
            </div>
            <div class="upcoming-container" id="upcomingContainer">
-               <!-- SKELETON LOADER -->
                <div class="skeleton skel-row" style="min-width:220px; height:100px;"></div>
                <div class="skeleton skel-row" style="min-width:220px; height:100px; opacity:0.5;"></div>
            </div>
@@ -526,16 +519,12 @@
        </div>
     </div>
 
-    <!-- =============================================== -->
     <!-- TAB 2: KALENDER (INJECTION) -->
-    <!-- =============================================== -->
     <div id="view-calendar" class="view-section">
         <?!= include('calendar'); ?>
     </div>
 
-    <!-- =============================================== -->
     <!-- TAB 3: RIWAYAT -->
-    <!-- =============================================== -->
     <div id="view-history" class="view-section">
       <div style="font-size: 1.8rem; font-weight: 800; color: var(--text-head); margin-bottom: 20px; letter-spacing: -0.5px; padding: 0 10px;">Riwayat</div>
       
@@ -564,9 +553,7 @@
       </div>
     </div>
 
-    <!-- =============================================== -->
     <!-- TAB 4: PROFIL -->
-    <!-- =============================================== -->
     <div id="view-profile" class="view-section">
       <div style="font-size: 1.8rem; font-weight: 800; color: var(--text-head); margin-bottom: 20px; letter-spacing: -0.5px; padding: 0 10px;">Pengaturan</div>
       <div class="card glass-panel" id="profileCard">
@@ -674,6 +661,11 @@
 
 <script>
 // ================================================
+// TANGKAP TOKEN VIP DARI BACKEND
+// ================================================
+const myVipToken = "<?= typeof tokenVip !== 'undefined' ? tokenVip : '' ?>";
+
+// ================================================
 // VARIABEL GLOBAL PENTING
 // ================================================
 window.globalCalendarEvents = []; 
@@ -779,12 +771,6 @@ function updateClock() {
 setInterval(updateClock, 1000);
 
 
-// ========================================================
-// FUNGSI BACKGROUND SYNC (DYNAMIC PILL + SMART CHECK)
-// ========================================================
-var lastSyncTime = Date.now(); 
-var isSyncing = false; 
-
 function performBackgroundSync() {
     if(isSyncing) return; 
     var now = Date.now();
@@ -803,7 +789,7 @@ function performBackgroundSync() {
         }
     }).withFailureHandler(function(e) { 
         isSyncing = false; if(ind) ind.classList.remove('show');
-    }).getInitialData();
+    }).getInitialData(myVipToken);
 }
 
 function switchTab(tabName) { 
@@ -1007,10 +993,9 @@ function resetMood() {
 }
 
 var posData = null; var gpsReady = false; var checkedIn = false; var activeJenis = null; var currentWeekServer = 1; var userWeek = 0; 
+var lastSyncTime = Date.now(); 
+var isSyncing = false; 
 
-// ========================================================
-// APPLE STYLE LOADER FUNCTIONS
-// ========================================================
 function showLoad(show, text = 'Memproses...') { 
     var loader = document.getElementById('loader');
     var spinner = document.getElementById('spinnerGraphic');
@@ -1022,11 +1007,10 @@ function showLoad(show, text = 'Memproses...') {
         success.style.display = 'none';
         textEl.textContent = text;
         loader.style.display = 'flex';
-        // Small delay to allow display:flex to apply before animating opacity
         setTimeout(() => { loader.style.opacity = '1'; }, 10);
     } else {
         loader.style.opacity = '0';
-        setTimeout(() => { loader.style.display = 'none'; }, 300); // Wait for transition
+        setTimeout(() => { loader.style.display = 'none'; }, 300); 
     }
 } 
 
@@ -1039,15 +1023,12 @@ function showSuccessCheckmark(message) {
     success.style.display = 'block';
     if(message) textEl.textContent = message;
 
-    // Restart the animation by forcing a reflow
     success.classList.remove('apple-success');
     void success.offsetWidth; 
     success.classList.add('apple-success');
 
-    // Return a promise that resolves after the animation finishes
     return new Promise(resolve => setTimeout(resolve, 1200));
 }
-// ========================================================
 
 function getMasukBadge(h) { 
     var s = String(h||'').trim(); if(!s || s === '-') return {c:'', t:''}; 
@@ -1224,9 +1205,6 @@ function renderHistoryData(d) {
     } 
 }
 
-// =========================================================
-// FUNGSI BARU: RENDER UPCOMING EVENTS SLIDER (H+7)
-// =========================================================
 function renderUpcomingEvents() {
     var container = document.getElementById('upcomingContainer');
     var section = document.getElementById('upcomingSection');
@@ -1323,7 +1301,7 @@ function onDataSuccess(d) {
    }
    
    if(d.profile && (d.profile.nama === 'Guest' || d.profile.nim === '-')) { 
-       document.getElementById('profileCard').innerHTML = '<div style="display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:15px 10px;"><div style="width:50px; height:50px; background:rgba(255,59,48,0.1); color:var(--danger); border-radius:25px; display:flex; justify-content:center; align-items:center; font-size:1.5rem; margin-bottom:12px;">✖</div><div style="font-weight:800; color:var(--text-head); font-size:1.1rem; margin-bottom:5px;">Akses Ditolak</div><div style="color:var(--text-muted); font-size:0.85rem; line-height:1.4;">Email UII Anda valid, namun belum didaftarkan.</div></div>'; 
+       document.getElementById('profileCard').innerHTML = '<div style="display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:15px 10px;"><div style="width:50px; height:50px; background:rgba(255,59,48,0.1); color:var(--danger); border-radius:25px; display:flex; justify-content:center; align-items:center; font-size:1.5rem; margin-bottom:12px;">✖</div><div style="font-weight:800; color:var(--text-head); font-size:1.1rem; margin-bottom:5px;">Akses Ditolak</div><div style="color:var(--text-muted); font-size:0.85rem; line-height:1.4;">Email Anda valid, namun belum terdaftar.</div></div>'; 
        Swal.fire('Data Tidak Ditemukan', 'Silakan hubungi admin.', 'error'); 
        var btnHome = document.getElementById('btnHomeAction'); 
        if(btnHome) { 
@@ -1404,7 +1382,7 @@ function loadAllData() {
           document.getElementById('profileCard').innerHTML = '<div style="color:var(--danger);">' + esc(e.message) + '</div>'; 
           Swal.fire('Gagal', 'Koneksi ke Google bermasalah.', 'error'); setMode('PRE_CHECKIN'); 
       } 
-  }).getInitialData();
+  }).getInitialData(myVipToken);
 }
 
 document.addEventListener('DOMContentLoaded', function() { 
@@ -1464,11 +1442,9 @@ window.toggleLateInputs = function(val) {
 
 function doCheckin(j, lateData) { 
     showLoad(true, 'Sedang Check-In...'); 
-    var pl = { jenis: j, aksi: 'CHECKIN', lat: posData.lat, lng: posData.lng, akurasi: posData.akurasi, catatan_jobdesk: '', selfie_url: selfieUrl, pose: currentPose, mood: currentMood }; 
+    var pl = { tokenVip: myVipToken, jenis: j, aksi: 'CHECKIN', lat: posData.lat, lng: posData.lng, akurasi: posData.akurasi, catatan_jobdesk: '', selfie_url: selfieUrl, pose: currentPose, mood: currentMood }; 
     if(lateData) pl.alasan_telat = lateData.type + ' - ' + lateData.detail; 
     
-    // Using setTimeout to simulate network request in Canvas preview.
-    // In real app, remove this and use google.script.run
     if(typeof google !== 'undefined') {
         google.script.run.withSuccessHandler(function(r){ 
             showSuccessCheckmark('Berhasil!').then(() => {
@@ -1521,7 +1497,7 @@ function doCheckout(j, jd) {
             });
         }).withFailureHandler(function(e){ 
             showLoad(false); Swal.fire('Gagal',safeErr(e),'error'); 
-        }).submitAttendance({ jenis: j, aksi: 'CHECKOUT', lat: posData.lat, lng: posData.lng, akurasi: posData.akurasi, catatan_jobdesk: jd, selfie_url: selfieUrl, pose: currentPose, mood: currentMood }); 
+        }).submitAttendance({ tokenVip: myVipToken, jenis: j, aksi: 'CHECKOUT', lat: posData.lat, lng: posData.lng, akurasi: posData.akurasi, catatan_jobdesk: jd, selfie_url: selfieUrl, pose: currentPose, mood: currentMood }); 
     } else {
         setTimeout(() => {
              showSuccessCheckmark('Selesai!').then(() => {
@@ -1566,7 +1542,7 @@ document.addEventListener('touchend', () => {
             if(typeof google !== 'undefined') {
                 google.script.run.withSuccessHandler(d => { 
                     onDataSuccess(d); endPTR(); 
-                }).withFailureHandler(endPTR).getInitialData();
+                }).withFailureHandler(endPTR).getInitialData(myVipToken);
             } else {
                 setTimeout(endPTR, 1000); // Buat ngetes kalau offline
             }
