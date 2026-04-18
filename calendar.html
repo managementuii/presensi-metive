@@ -260,13 +260,11 @@
         modal.classList.add('show');
     }
 
-    // FUNGSI MENUTUP MODAL
     function closeEventModal() {
         var m = document.getElementById('eventModal'); m.classList.remove('show');
         setTimeout(function() { var content = m.querySelector('.modal-content'); if(content) content.style.transform = ''; }, 400);
     }
 
-    // FUNGSI MENYIMPAN DATA (TAMBAH/EDIT)
     function saveCalendarEventData() {
         var evId = document.getElementById('evId').value;
         var judul = document.getElementById('evJudul').value.trim();
@@ -289,15 +287,14 @@
             });
         }
         
-        var payload = { judul: judul, tanggal: tanggal, waktu: waktu, peserta: selectedPeserta };
+        // MENAMBAHKAN TOKEN VIP KE PAYLOAD
+        var payload = { tokenVip: myVipToken, judul: judul, tanggal: tanggal, waktu: waktu, peserta: selectedPeserta };
         
         showLoad(true);
         if (evId !== '') {
-            // EKSEKUSI UPDATE
             payload.id = evId;
             google.script.run.withSuccessHandler(function(res) { handleSaveRes(res); }).withFailureHandler(function(err) { showLoad(false); Swal.fire('Error', safeErr(err), 'error'); }).editCalendarEvent(payload);
         } else {
-            // EKSEKUSI CREATE
             google.script.run.withSuccessHandler(function(res) { handleSaveRes(res); }).withFailureHandler(function(err) { showLoad(false); Swal.fire('Error', safeErr(err), 'error'); }).addCalendarEvent(payload);
         }
     }
@@ -320,6 +317,7 @@
         }).then(function(result) {
             if (result.isConfirmed) {
                 showLoad(true);
+                // MENAMBAHKAN TOKEN VIP SAAT MENGHAPUS
                 google.script.run.withSuccessHandler(function(res) {
                     showLoad(false);
                     if(res.ok) {
@@ -330,7 +328,7 @@
                     } else { Swal.fire('Gagal', res.message, 'error'); }
                 }).withFailureHandler(function(err) {
                     showLoad(false); Swal.fire('Error', safeErr(err), 'error');
-                }).deleteCalendarEvent(eventId);
+                }).deleteCalendarEvent({ id: eventId, tokenVip: myVipToken });
             }
         });
     }
